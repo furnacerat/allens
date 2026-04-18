@@ -220,21 +220,25 @@ const Storage = {
         ];
 
         // Demo Schedule Templates
+        const kitchenRemodelMilestones = [
+            { title: 'Permit if needed', daysOffset: -14 },
+            { title: 'Demo', daysOffset: 0 },
+            { title: 'Rough-in', daysOffset: 7 },
+            { title: 'Drywall', daysOffset: 14 },
+            { title: 'Cabinets', daysOffset: 21 },
+            { title: 'Countertops', daysOffset: 28 },
+            { title: 'Final Walkthrough', daysOffset: 35 }
+        ];
+        
+        const kitchenRemodelTasks = [
+            { title: 'Demo old cabinets', category: 'demolition', estimatedHours: 8 },
+            { title: 'Install base cabinets', category: 'install', estimatedHours: 6 },
+            { title: 'Install upper cabinets', category: 'install', estimatedHours: 4 },
+            { title: 'Plumbing hookup', category: 'plumbing', estimatedHours: 2 }
+        ];
+        
         const scheduleTemplates = [
-            { id: 'template_1', name: 'Kitchen Remodel', jobType: 'kitchen', milestones: [
-                { title: 'Permit if needed', daysOffset: -14 },
-                { title: 'Demo', daysOffset: 0 },
-                { title: 'Rough-in', daysOffset: 7 },
-                { title: 'Drywall', daysOffset: 14 },
-                { title: 'Cabinets', daysOffset: 21 },
-                { title: 'Countertops', daysOffset: 28 },
-                { title: 'Final Walkthrough', daysOffset: 35 }]
-            }, tasks: [
-                { title: 'Demo old cabinets', category: 'demolition', estimatedHours: 8 },
-                { title: 'Install base cabinets', category: 'install', estimatedHours: 6 },
-                { title: 'Install upper cabinets', category: 'install', estimatedHours: 4 },
-                { title: 'Plumbing hookup', category: 'plumbing', estimatedHours: 2 }
-            ], createdDate: now, updatedDate: now }
+            { id: 'template_1', name: 'Kitchen Remodel', jobType: 'kitchen', milestones: kitchenRemodelMilestones, tasks: kitchenRemodelTasks, createdDate: now, updatedDate: now }
         ];
 
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(defaultSettings));

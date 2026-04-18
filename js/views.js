@@ -300,7 +300,7 @@ warranties: () => WarrantiesView.render(content),
 
         container.innerHTML = `
             <div class="search-bar">
-                <input type="text" class="form-input" placeholder="Search jobs..." id="job-search" oninput="JobList.filter(this.value)">
+                <input type="text" class="form-input" placeholder="Search jobs..." id="job-search" oninput="Views.filterJobList(this.value)">
             </div>
             <div class="quick-actions mb-md">
                 <button class="btn btn-primary btn-lg" onclick="JobForm.open()">
@@ -309,7 +309,7 @@ warranties: () => WarrantiesView.render(content),
             </div>
             <div class="card">
                 <div class="card-body no-padding" id="job-list">
-                    ${JobList.render(jobs)}
+                    ${Views.renderJobList(jobs)}
                 </div>
             </div>
         `;
@@ -616,6 +616,40 @@ warranties: () => WarrantiesView.render(content),
                 </div>
             </div>
         </div>`;
+    },
+
+    // Job List
+    renderJobList(jobs, searchTerm = '') {
+        const filtered = searchTerm
+            ? jobs.filter(j =>
+                j.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                j.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                j.address.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            : jobs;
+
+        if (filtered.length === 0) {
+            return createEmptyState('📋', 'No Jobs', 'Create your first job to get started.');
+        }
+
+        return filtered.map(job => `
+            <button class="list-item" onclick="JobDetailView.render(document.getElementById('content'), '${job.id}')">
+                <div class="list-item-content">
+                    <div class="list-item-title">${job.name}</div>
+                    <div class="list-item-subtitle">${job.customerName} • ${job.address || 'No address'}</div>
+                </div>
+                <div class="list-item-meta">
+                    ${createStatusBadge(job.status, getJobStatusLabel(job.status))}
+                    <div>${getProjectTypeLabel(job.projectType)}</div>
+                </div>
+            </button>
+        `).join('');
+    },
+
+    filterJobList(term) {
+        const jobs = Storage.getJobs();
+        const list = document.getElementById('job-list');
+        if (list) list.innerHTML = this.renderJobList(jobs, term);
     }
 };
 
@@ -2019,7 +2053,6 @@ const ActualCostForm = {
 
 // Make views globally available
 window.Views = Views;
-window.JobList = JobList;
 window.JobForm = JobForm;
 window.EstimateForm = EstimateForm;
 window.EstimateBuilder = EstimateBuilder;
