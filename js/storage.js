@@ -176,14 +176,15 @@ const Storage = {
             { id: 'comm_demo_2', jobId: 'job_demo_1', dateTime: now, type: 'text', contactPerson: 'Bob Anderson', subject: 'Final walkthrough', notes: 'Client happy with work. Schedule final payment.', followUpNeeded: false, createdBy: 'Allen Foster', createdDate: now, updatedDate: now }
         ];
 
-        // Demo Calendar Events (this week)
+// Demo Calendar Events (this week)
         const today = new Date();
         const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
         const dayAfter = new Date(today); dayAfter.setDate(dayAfter.getDate() + 2);
         const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate() + 7);
+        const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
         
         const calendarEvents = [
-            { id: 'cal_1', jobId: 'job_demo_2', title: 'Kitchen Install', type: 'install', startDate: today.toISOString().split('T')[0], startTime: '08:00', endTime: '17:00', allDay: false, location: '456 Maple Ave', assignedTo: '', crewId: '', status: 'scheduled', notes: '', createdDate: now, updatedDate: now },
+            { id: 'cal_1', jobId: 'job_demo_2', title: 'Kitchen Install', type: 'install', startDate: today.toISOString().split('T')[0], startTime: '08:00', endTime: '17:00', allDay: false, location: '456 Maple Ave', assignedTo: '', crewId: '', status: 'scheduled', notes: '', createdDate: now, updatedDate: now }],
             { id: 'cal_2', jobId: 'job_demo_3', title: 'Site Visit - Estimate', type: 'estimate_appointment', startDate: tomorrow.toISOString().split('T')[0], startTime: '10:00', endTime: '11:00', allDay: false, location: '789 Ridgeview Dr', assignedTo: '', crewId: '', status: 'confirmed', notes: 'Bring paint samples', createdDate: now, updatedDate: now },
             { id: 'cal_3', jobId: 'job_demo_1', title: 'Final Walkthrough', type: 'final_walkthrough', startDate: dayAfter.toISOString().split('T')[0], startTime: '14:00', endTime: '15:00', allDay: false, location: '123 Oak Street', assignedTo: 'Allen Foster', crewId: '', status: 'scheduled', notes: '', createdDate: now, updatedDate: now },
             { id: 'cal_4', jobId: 'job_demo_2', title: 'Material Delivery', type: 'material_delivery', startDate: nextWeek.toISOString().split('T')[0], startTime: '09:00', endTime: '10:00', allDay: false, location: '456 Maple Ave', assignedTo: '', crewId: '', status: 'scheduled', notes: 'Cabinets and countertops', createdDate: now, updatedDate: now }
@@ -213,7 +214,6 @@ const Storage = {
         ];
 
         // Demo Daily Logs
-        const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
         const dailyLogs = [
             { id: 'log_1', jobId: 'job_demo_2', logDate: yesterday.toISOString().split('T')[0], weather: 'Sunny, 65F', crewOnSite: 'Allen', workCompleted: 'Removed old cabinets, disposed. Demo complete.', materialsDelivered: '', issues: 'Found water damage behind sink cabinet', inspections: '', customerComm: '', safetyNotes: '', nextSteps: 'Start base cabinet install tomorrow', createdBy: 'Allen Foster', createdDate: now, updatedDate: now },
             { id: 'log_2', jobId: 'job_demo_1', logDate: yesterday.toISOString().split('T')[0], weather: 'Cloudy, 58F', crewOnSite: 'Allen', workCompleted: 'Punch list items complete. Final cleaning.', materialsDelivered: '', issues: '', inspections: '', customerComm: 'Client satisfied', safetyNotes: '', nextSteps: 'Schedule final payment', createdBy: 'Allen Foster', createdDate: now, updatedDate: now }
