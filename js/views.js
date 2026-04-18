@@ -114,8 +114,10 @@ const Views = {
             subbids: () => SubBidsView.render(content),
             jobcosts: () => JobCostsView.render(content),
             invoices: () => InvoicesView.render(content),
-            contracts: () => this.renderContracts(content),
-            warranties: () => this.renderWarranties(content),
+            contracts: () => ContractsView.render(content),
+            warranties: () => WarrantiesView.render(content),
+            punchlists: () => PunchListsView.render(content),
+            materials: () => MaterialsView.render(content),
             punchlists: () => this.renderPunchLists(content),
             materials: () => this.renderMaterials(content),
             settings: () => this.renderSettings(content)
@@ -2197,3 +2199,1758 @@ const SignaturePad = {
 window.BackupForm = BackupForm;
 window.TeamMemberForm = TeamMemberForm;
 window.SignaturePad = SignaturePad;
+
+// ==========================================
+// CONTRACTS VIEW
+// ==========================================
+const ContractsView = {
+    render(container) {
+        const contracts = Storage.getContracts();
+        const jobs = Storage.getJobs();
+        
+        const sorted = contracts.sort((a, b) => new Date(b.updatedDate) - new Date(a.updatedDate));
+        
+        let html = `
+            <div class="view-header">
+                <button class="btn btn-primary" onclick="ContractsView.createNew()">
+                    <span>+ New Contract</span>
+                </button>
+            </div>
+            <div class="card-list">
+        `;
+        
+        if (sorted.length === 0) {
+            html += `
+                <div class="empty-state">
+                    <p>No contracts yet.</p>
+                    <p class="text-muted">Create a contract from an accepted estimate or manually.</p>
+                </div>
+            `;
+        } else {
+            sorted.forEach(contract => {
+                const job = jobs.find(j => j.id === contract.jobId);
+                const statusClass = contract.status === 'signed' ? 'status-success' : contract.status === 'issued' ? 'status-warning' : contract.status === 'void' ? 'status-danger' : 'status-muted';
+                
+                html += `
+                    <div class="card" onclick="ContractsView.viewContract('${contract.id}')">
+                        <div class="card-header">
+                            <span class="contract-number">${contract.contractNumber}</span>
+                            <span class="badge ${statusClass}">${contract.status}</span>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title">${contract.title}</h3>
+                            <p class="card-meta">${job ? job.name : 'No job linked'}</p>
+                            <p class="card-amount">${formatCurrency(contract.amount)}</p>
+                        </div>
+                        <div class="card-footer">
+                            <span>${contract.issueDate ? 'Issued: ' + formatDate(contract.issueDate) : 'Draft'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+    
+    createNew(jobId = null, estimateId = null) {
+        const jobs = Storage.getJobs();
+        const estimates = Storage.getEstimates();
+        const settings = Storage.getSettings();
+        
+        let prefillJob = null;
+        let prefillEstimate = null;
+        
+        if (jobId) {
+            prefillJob = jobs.find(j => j.id === jobId);
+            if (estimateId) {
+                prefillEstimate = estimates.find(e => e.id === estimateId);
+            } else {
+                prefillEstimate = estimates.find(e => e.jobId === jobId && e.status === 'accepted');
+            }
+        }
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'New Contract';
+        content.innerHTML = `
+            <form id="contract-form" class="form">
+                <div class="form-group">
+                    <label>Job</label>
+                    <select id="contract-job-id" onchange="ContractsView.onJobChange()">
+                        <option value="">Select a job...</option>
+                        ${jobs.map(j => `<option value="${j.id}" ${prefillJob && j.id === prefillJob.id ? 'selected' : ''}>${j.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estimate (optional)</label>
+                    <select id="contract-estimate-id" disabled>
+                        <option value="">Select estimate...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contract Title</label>
+                    <input type="text" id="contract-title" value="${prefillEstimate ? prefillEstimate.name + ' Contract' : ''}" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Issue Date</label>
+                        <input type="date" id="contract-issue-date" value="${today()}">
+                    </div>
+                    <div class="form-group">
+                        <label>Effective Date</label>
+                        <input type="date" id="contract-effective-date">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="contract-start-date">
+                    </div>
+                    <div class="form-group">
+                        <label>Completion Date</label>
+                        <input type="date" id="contract-completion-date">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Contract Amount</label>
+                    <input type="number" id="contract-amount" step="0.01" value="${prefillEstimate ? calculateEstimate(prefillEstimate, settings).grandTotal : 0}">
+                </div>
+                <div class="form-group">
+                    <label>Scope Summary</label>
+                    <textarea id="contract-scope">${prefillEstimate ? prefillEstimate.scopeSummary : ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Exclusions</label>
+                    <textarea id="contract-exclusions">${settings.defaultExclusions || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Terms & Conditions</label>
+                    <textarea id="contract-terms">${settings.defaultTerms || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Payment Terms</label>
+                    <input type="text" id="contract-payment-terms" value="${settings.defaultTerms || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Cancellation Text</label>
+                    <textarea id="contract-cancellation">Either party may cancel with 48 hours written notice. Deposit refunded if no work started.</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Warranty Text</label>
+                    <textarea id="contract-warranty">1-year workmanship warranty on all labor. Manufacturer warranties pass through to homeowner.</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Prepared By</label>
+                    <input type="text" id="contract-prepared-by" value="${settings.contactName || ''}">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Contract</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('contract-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveContract();
+        });
+        
+        if (prefillJob) {
+            document.getElementById('contract-job-id').value = prefillJob.id;
+            this.loadEstimatesForJob(prefillJob.id, prefillEstimate ? prefillEstimate.id : null);
+        }
+    },
+    
+    onJobChange() {
+        const jobId = document.getElementById('contract-job-id').value;
+        this.loadEstimatesForJob(jobId);
+    },
+    
+    loadEstimatesForJob(jobId, prefillEstimateId = null) {
+        const estimateSelect = document.getElementById('contract-estimate-id');
+        if (!jobId) {
+            estimateSelect.innerHTML = '<option value="">Select estimate...</option>';
+            estimateSelect.disabled = true;
+            return;
+        }
+        
+        const estimates = Storage.getEstimates().filter(e => e.jobId === jobId);
+        
+        if (estimates.length === 0) {
+            estimateSelect.innerHTML = '<option value="">No estimates for this job</option>';
+            estimateSelect.disabled = true;
+            return;
+        }
+        
+        estimateSelect.innerHTML = '<option value="">Select estimate...</option>' +
+            estimates.map(e => `<option value="${e.id}" ${prefillEstimateId && e.id === prefillEstimateId ? 'selected' : ''}>${e.name} (${e.status})</option>`).join('');
+        estimateSelect.disabled = false;
+    },
+    
+    saveContract() {
+        const contracts = Storage.getContracts();
+        const settings = Storage.getSettings();
+        
+        const contract = createContract({
+            jobId: document.getElementById('contract-job-id').value || null,
+            estimateId: document.getElementById('contract-estimate-id').value || null,
+            title: document.getElementById('contract-title').value,
+            issueDate: document.getElementById('contract-issue-date').value,
+            effectiveDate: document.getElementById('contract-effective-date').value || null,
+            startDate: document.getElementById('contract-start-date').value || null,
+            completionDate: document.getElementById('contract-completion-date').value || null,
+            amount: parseFloat(document.getElementById('contract-amount').value) || 0,
+            scopeSummary: document.getElementById('contract-scope').value,
+            exclusions: document.getElementById('contract-exclusions').value,
+            termsConditions: document.getElementById('contract-terms').value,
+            paymentTerms: document.getElementById('contract-payment-terms').value,
+            cancellationText: document.getElementById('contract-cancellation').value,
+            warrantyText: document.getElementById('contract-warranty').value,
+            preparedBy: document.getElementById('contract-prepared-by').value,
+            createdBy: settings.contactName || ''
+        });
+        
+        contracts.push(contract);
+        Storage.saveContracts(contracts);
+        
+        Modal.close();
+        Toast.success('Contract created');
+        Views.render('contracts');
+    },
+    
+    viewContract(contractId) {
+        const contract = Storage.getContracts().find(c => c.id === contractId);
+        if (!contract) return;
+        
+        const job = Storage.getJobs().find(j => j.id === contract.jobId);
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = contract.contractNumber;
+        
+        const statusActions = contract.status === 'draft' ? `
+            <button class="btn btn-warning" onclick="ContractsView.updateStatus('${contract.id}', 'issued')">Mark Issued</button>
+        ` : contract.status === 'issued' ? `
+            <button class="btn btn-success" onclick="ContractsView.openSignatureModal('${contract.id}')">Collect Signatures</button>
+        ` : '';
+        
+        content.innerHTML = `
+            <div class="contract-view">
+                <div class="contract-header-section">
+                    <div>
+                        <h2>${contract.title}</h2>
+                        <p class="text-muted">${job ? job.name : 'No job linked'}</p>
+                    </div>
+                    <span class="badge badge-${contract.status === 'signed' ? 'success' : contract.status === 'issued' ? 'warning' : 'muted'}">${contract.status}</span>
+                </div>
+                
+                <div class="contract-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Contract Amount</span>
+                        <span class="detail-value">${formatCurrency(contract.amount)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Issue Date</span>
+                        <span class="detail-value">${contract.issueDate ? formatDate(contract.issueDate) : '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Start Date</span>
+                        <span class="detail-value">${contract.startDate ? formatDate(contract.startDate) : '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Completion Date</span>
+                        <span class="detail-value">${contract.completionDate ? formatDate(contract.completionDate) : '-'}</span>
+                    </div>
+                </div>
+                
+                <div class="contract-section">
+                    <h4>Scope</h4>
+                    <p>${contract.scopeSummary || 'No scope defined'}</p>
+                </div>
+                
+                <div class="contract-section">
+                    <h4>Exclusions</h4>
+                    <p>${contract.exclusions || 'None listed'}</p>
+                </div>
+                
+                <div class="contract-section">
+                    <h4>Terms</h4>
+                    <p>${contract.termsConditions || 'None listed'}</p>
+                </div>
+                
+                ${contract.customerSignature || contract.contractorSignature ? `
+                <div class="contract-section">
+                    <h4>Signatures</h4>
+                    ${contract.customerSignature ? `<p><strong>Customer:</strong> ${contract.customerSignature.name || '(signed)'}</p>` : ''}
+                    ${contract.contractorSignature ? `<p><strong>Contractor:</strong> ${contract.contractorSignature.name || '(signed)'}</p>` : ''}
+                    ${contract.signedDate ? `<p class="text-muted">Signed: ${formatDate(contract.signedDate)}</p>` : ''}
+                </div>
+                ` : ''}
+                
+                <div class="contract-actions">
+                    ${statusActions}
+                    <button class="btn btn-secondary" onclick="ContractsView.editContract('${contract.id}')">Edit</button>
+                    <button class="btn btn-secondary" onclick="ContractsView.printContract('${contract.id}')">Print</button>
+                    <button class="btn btn-danger" onclick="ContractsView.deleteContract('${contract.id}')">Delete</button>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    },
+    
+    openSignatureModal(contractId) {
+        const contract = Storage.getContracts().find(c => c.id === contractId);
+        if (!contract) return;
+        
+        const settings = Storage.getSettings();
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Sign Contract';
+        content.innerHTML = `
+            <form id="signature-form" class="form">
+                <div class="signature-section">
+                    <h4>Customer Signature</h4>
+                    <div id="customer-sig-pad"></div>
+                    <div class="form-group">
+                        <label>Typed Name</label>
+                        <input type="text" id="sig-customer-name" placeholder="Type full name">
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="ContractsView.clearSignature('customer')">Clear</button>
+                </div>
+                
+                <div class="signature-section">
+                    <h4>Contractor Signature</h4>
+                    <div id="contractor-sig-pad"></div>
+                    <div class="form-group">
+                        <label>Typed Name</label>
+                        <input type="text" id="sig-contractor-name" value="${settings.contactName || ''}">
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="ContractsView.clearSignature('contractor')">Clear</button>
+                </div>
+                
+                <div class="form-group">
+                    <label>Date Signed</label>
+                    <input type="date" id="sig-date" value="${today()}">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="ContractsView.viewContract('${contract.id}')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Signatures</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        setTimeout(() => {
+            window.customerSigPad = new SignaturePad('customer-sig-pad');
+            window.contractorSigPad = new SignaturePad('contractor-sig-pad');
+        }, 100);
+        
+        document.getElementById('signature-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveSignatures(contractId);
+        });
+    },
+    
+    clearSignature(type) {
+        if (type === 'customer' && window.customerSigPad) {
+            window.customerSigPad.clear();
+        } else if (type === 'contractor' && window.contractorSigPad) {
+            window.contractorSigPad.clear();
+        }
+    },
+    
+    saveSignatures(contractId) {
+        const contracts = Storage.getContracts();
+        const contract = contracts.find(c => c.id === contractId);
+        if (!contract) return;
+        
+        const customerSigData = window.customerSigPad ? window.customerSigPad.getData() : '';
+        const contractorSigData = window.contractorSigPad ? window.contractorSigPad.getData() : '';
+        
+        contract.customerSignature = customerSigData ? { data: customerSigData, name: document.getElementById('sig-customer-name').value } : null;
+        contract.contractorSignature = contractorSigData ? { data: contractorSigData, name: document.getElementById('sig-contractor-name').value } : null;
+        contract.signedDate = document.getElementById('sig-date').value;
+        contract.status = 'signed';
+        contract.updatedDate = now();
+        
+        Storage.saveContracts(contracts);
+        
+        Modal.close();
+        Toast.success('Contract signed');
+        Views.render('contracts');
+    },
+    
+    updateStatus(contractId, status) {
+        const contracts = Storage.getContracts();
+        const contract = contracts.find(c => c.id === contractId);
+        if (!contract) return;
+        
+        contract.status = status;
+        contract.updatedDate = now();
+        
+        Storage.saveContracts(contracts);
+        
+        Modal.close();
+        Toast.success('Contract ' + status);
+        Views.render('contracts');
+    },
+    
+    editContract(contractId) {
+        const contract = Storage.getContracts().find(c => c.id === contractId);
+        if (!contract) return;
+        
+        const jobs = Storage.getJobs();
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Edit Contract';
+        content.innerHTML = `
+            <form id="contract-edit-form" class="form">
+                <div class="form-group">
+                    <label>Contract Title</label>
+                    <input type="text" id="edit-contract-title" value="${contract.title}">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Issue Date</label>
+                        <input type="date" id="edit-contract-issue-date" value="${contract.issueDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Effective Date</label>
+                        <input type="date" id="edit-contract-effective-date" value="${contract.effectiveDate || ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="edit-contract-start-date" value="${contract.startDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Completion Date</label>
+                        <input type="date" id="edit-contract-completion-date" value="${contract.completionDate || ''}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Contract Amount</label>
+                    <input type="number" id="edit-contract-amount" step="0.01" value="${contract.amount}">
+                </div>
+                <div class="form-group">
+                    <label>Scope Summary</label>
+                    <textarea id="edit-contract-scope">${contract.scopeSummary || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Exclusions</label>
+                    <textarea id="edit-contract-exclusions">${contract.exclusions || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Terms</label>
+                    <textarea id="edit-contract-terms">${contract.termsConditions || ''}</textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('contract-edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateContract(contractId);
+        });
+    },
+    
+    updateContract(contractId) {
+        const contracts = Storage.getContracts();
+        const contract = contracts.find(c => c.id === contractId);
+        if (!contract) return;
+        
+        contract.title = document.getElementById('edit-contract-title').value;
+        contract.issueDate = document.getElementById('edit-contract-issue-date').value || null;
+        contract.effectiveDate = document.getElementById('edit-contract-effective-date').value || null;
+        contract.startDate = document.getElementById('edit-contract-start-date').value || null;
+        contract.completionDate = document.getElementById('edit-contract-completion-date').value || null;
+        contract.amount = parseFloat(document.getElementById('edit-contract-amount').value) || 0;
+        contract.scopeSummary = document.getElementById('edit-contract-scope').value;
+        contract.exclusions = document.getElementById('edit-contract-exclusions').value;
+        contract.termsConditions = document.getElementById('edit-contract-terms').value;
+        contract.updatedDate = now();
+        
+        Storage.saveContracts(contracts);
+        
+        Modal.close();
+        Toast.success('Contract updated');
+        Views.render('contracts');
+    },
+    
+    printContract(contractId) {
+        const contract = Storage.getContracts().find(c => c.id === contractId);
+        if (!contract) return;
+        
+        const job = Storage.getJobs().find(j => j.id === contract.jobId);
+        const settings = Storage.getSettings();
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${contract.contractNumber}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                    h1 { text-align: center; }
+                    .header { text-align: center; margin-bottom: 40px; }
+                    .company { font-size: 18px; font-weight: bold; }
+                    h2 { border-bottom: 1px solid #333; padding-bottom: 10px; }
+                    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; }
+                    .detail-label { font-weight: bold; }
+                    .section { margin: 30px 0; }
+                    .signature-section { margin-top: 60px; display: flex; justify-content: space-between; }
+                    .sig-box { width: 45%; }
+                    .sig-line { border-top: 1px solid #333; margin-top: 40px; padding-top: 8px; }
+                    @media print { body { padding: 20px; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="company">${settings.companyName || "Allen's Contractor's"}</div>
+                    ${settings.address ? `<div>${settings.address}</div>` : ''}
+                    ${settings.phone ? `<div>${settings.phone}</div>` : ''}
+                </div>
+                
+                <h1>${contract.contractNumber}</h1>
+                <h2>${contract.title}</h2>
+                
+                <div class="detail-row">
+                    <span>Date:</span>
+                    <span>${contract.issueDate || today()}</span>
+                </div>
+                ${job ? `
+                <div class="detail-row">
+                    <span>Job:</span>
+                    <span>${job.name}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Address:</span>
+                    <span>${job.address || '-'}</span>
+                </div>
+                ` : ''}
+                <div class="detail-row">
+                    <span>Contract Amount:</span>
+                    <span><strong>${formatCurrency(contract.amount)}</strong></span>
+                </div>
+                
+                <div class="section">
+                    <h3>Project Scope</h3>
+                    <p>${contract.scopeSummary || 'See attached scope of work.'}</p>
+                </div>
+                
+                <div class="section">
+                    <h3>Exclusions</h3>
+                    <p>${contract.exclusions || 'None'}</p>
+                </div>
+                
+                <div class="section">
+                    <h3>Terms & Conditions</h3>
+                    <p>${contract.termsConditions || 'Standard terms apply.'}</p>
+                </div>
+                
+                <div class="section">
+                    <h3>Payment Terms</h3>
+                    <p>${contract.paymentTerms || 'Payment due upon completion.'}</p>
+                </div>
+                
+                <div class="section">
+                    <h3>Warranty</h3>
+                    <p>${contract.warrantyText || '1-year workmanship warranty.'}</p>
+                </div>
+                
+                <div class="signature-section">
+                    <div class="sig-box">
+                        <p>Customer Signature:</p>
+                        ${contract.customerSignature ? `<img src="${contract.customerSignature.data}" style="max-width:200px;max-height:60px;">` : '<div class="sig-line"></div>'}
+                        <p>${contract.customerSignature ? contract.customerSignature.name : ''}</p>
+                        <p>Date: ${contract.signedDate || '________'}</p>
+                    </div>
+                    <div class="sig-box">
+                        <p>Contractor Signature:</p>
+                        ${contract.contractorSignature ? `<img src="${contract.contractorSignature.data}" style="max-width:200px;max-height:60px;">` : '<div class="sig-line"></div>'}
+                        <p>${contract.contractorSignature ? contract.contractorSignature.name : ''}</p>
+                        <p>Date: ${contract.signedDate || '________'}</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    },
+    
+    deleteContract(contractId) {
+        if (!confirm('Delete this contract?')) return;
+        
+        const contracts = Storage.getContracts();
+        const filtered = contracts.filter(c => c.id !== contractId);
+        Storage.saveContracts(filtered);
+        
+        Modal.close();
+        Toast.success('Contract deleted');
+        Views.render('contracts');
+    }
+};
+
+window.ContractsView = ContractsView;
+
+// Make contracts available from main render
+Views.renderContracts = function(container) {
+    ContractsView.render(container);
+};
+
+// ==========================================
+// WARRANTIES VIEW
+// ==========================================
+const WarrantiesView = {
+    render(container) {
+        const warranties = Storage.getWarranties();
+        const jobs = Storage.getJobs();
+        
+        const sorted = warranties.sort((a, b) => new Date(b.updatedDate) - new Date(a.updatedDate));
+        
+        let html = `
+            <div class="view-header">
+                <button class="btn btn-primary" onclick="WarrantiesView.createNew()">
+                    <span>+ New Warranty</span>
+                </button>
+            </div>
+            <div class="card-list">
+        `;
+        
+        if (sorted.length === 0) {
+            html += `
+                <div class="empty-state">
+                    <p>No warranties yet.</p>
+                    <p class="text-muted">Track labor and product warranties here.</p>
+                </div>
+            `;
+        } else {
+            sorted.forEach(warranty => {
+                const job = jobs.find(j => j.id === warranty.jobId);
+                const isExpired = warranty.status === 'expired';
+                const statusClass = isExpired ? 'status-expired' : warranty.status === 'active' ? 'status-success' : 'status-muted';
+                
+                html += `
+                    <div class="card" onclick="WarrantiesView.viewWarranty('${warranty.id}')">
+                        <div class="card-header">
+                            <span class="warranty-type">${warranty.type}</span>
+                            <span class="badge ${statusClass}">${warranty.status}</span>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title">${warranty.title}</h3>
+                            <p class="card-meta">${job ? job.name : 'No job linked'}</p>
+                        </div>
+                        <div class="card-footer">
+                            <span>${warranty.endDate ? 'Expires: ' + formatDate(warranty.endDate) : ''}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+    
+    createNew(jobId = null) {
+        const jobs = Storage.getJobs();
+        const completedJobs = jobs.filter(j => j.status === 'completed');
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'New Warranty';
+        content.innerHTML = `
+            <form id="warranty-form" class="form">
+                <div class="form-group">
+                    <label>Job</label>
+                    <select id="warranty-job-id" required onchange="WarrantiesView.onJobChange()">
+                        <option value="">Select a job...</option>
+                        ${completedJobs.map(j => `<option value="${j.id}">${j.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Warranty Title</label>
+                    <input type="text" id="warranty-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Warranty Type</label>
+                    <select id="warranty-type">
+                        ${WARRANTY_TYPES.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Coverage Description</label>
+                    <textarea id="warranty-coverage"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="warranty-start-date" value="${today()}">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="warranty-end-date">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Exclusions</label>
+                    <textarea id="warranty-exclusions"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="warranty-notes"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Warranty</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('warranty-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveWarranty();
+        });
+        
+        if (jobId) {
+            document.getElementById('warranty-job-id').value = jobId;
+        }
+    },
+    
+    onJobChange() {
+        // Could auto-fill contract info if needed
+    },
+    
+    saveWarranty() {
+        const warranties = Storage.getWarranties();
+        
+        const warranty = createWarranty({
+            jobId: document.getElementById('warranty-job-id').value,
+            title: document.getElementById('warranty-title').value,
+            type: document.getElementById('warranty-type').value,
+            coverageDescription: document.getElementById('warranty-coverage').value,
+            startDate: document.getElementById('warranty-start-date').value,
+            endDate: document.getElementById('warranty-end-date').value,
+            exclusions: document.getElementById('warranty-exclusions').value,
+            notes: document.getElementById('warranty-notes').value
+        });
+        
+        warranties.push(warranty);
+        Storage.saveWarranties(warranties);
+        
+        Modal.close();
+        Toast.success('Warranty created');
+        Views.render('warranties');
+    },
+    
+    viewWarranty(warrantyId) {
+        const warranty = Storage.getWarranties().find(w => w.id === warrantyId);
+        if (!warranty) return;
+        
+        const job = Storage.getJobs().find(j => j.id === warranty.jobId);
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = warranty.title;
+        
+        content.innerHTML = `
+            <div class="warranty-view">
+                <div class="warranty-header">
+                    <span class="badge badge-${warranty.status === 'active' ? 'success' : 'muted'}">${warranty.status}</span>
+                    <span class="warranty-type">${warranty.type}</span>
+                </div>
+                
+                <div class="warranty-details">
+                    ${job ? `<p><strong>Job:</strong> ${job.name}</p>` : ''}
+                    <p><strong>Coverage:</strong> ${warranty.coverageDescription || 'None described'}</p>
+                    <p><strong>Start:</strong> ${warranty.startDate ? formatDate(warranty.startDate) : '-'}</p>
+                    <p><strong>End:</strong> ${warranty.endDate ? formatDate(warranty.endDate) : '-'}</p>
+                    ${warranty.exclusions ? `<p><strong>Exclusions:</strong> ${warranty.exclusions}</p>` : ''}
+                    ${warranty.notes ? `<p><strong>Notes:</strong> ${warranty.notes}</p>` : ''}
+                </div>
+                
+                <div class="warranty-actions">
+                    <button class="btn btn-secondary" onclick="WarrantiesView.editWarranty('${warranty.id}')">Edit</button>
+                    <button class="btn btn-danger" onclick="WarrantiesView.deleteWarranty('${warranty.id}')">Delete</button>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    },
+    
+    editWarranty(warrantyId) {
+        const warranty = Storage.getWarranties().find(w => w.id === warrantyId);
+        if (!warranty) return;
+        
+        const jobs = Storage.getJobs();
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Edit Warranty';
+        content.innerHTML = `
+            <form id="warranty-edit-form" class="form">
+                <div class="form-group">
+                    <label>Job</label>
+                    <select id="edit-warranty-job-id">
+                        <option value="">Select job...</option>
+                        ${jobs.map(j => `<option value="${j.id}" ${j.id === warranty.jobId ? 'selected' : ''}>${j.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="edit-warranty-title" value="${warranty.title}">
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="edit-warranty-type">
+                        ${WARRANTY_TYPES.map(t => `<option value="${t.value}" ${t.value === warranty.type ? 'selected' : ''}>${t.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Coverage</label>
+                    <textarea id="edit-warranty-coverage">${warranty.coverageDescription || ''}</textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="edit-warranty-start-date" value="${warranty.startDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="edit-warranty-end-date" value="${warranty.endDate || ''}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="edit-warranty-status">
+                        ${WARRANTY_STATUSES.map(s => `<option value="${s.value}" ${s.value === warranty.status ? 'selected' : ''}>${s.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('warranty-edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateWarranty(warrantyId);
+        });
+    },
+    
+    updateWarranty(warrantyId) {
+        const warranties = Storage.getWarranties();
+        const warranty = warranties.find(w => w.id === warrantyId);
+        if (!warranty) return;
+        
+        warranty.jobId = document.getElementById('edit-warranty-job-id').value || null;
+        warranty.title = document.getElementById('edit-warranty-title').value;
+        warranty.type = document.getElementById('edit-warranty-type').value;
+        warranty.coverageDescription = document.getElementById('edit-warranty-coverage').value;
+        warranty.startDate = document.getElementById('edit-warranty-start-date').value || null;
+        warranty.endDate = document.getElementById('edit-warranty-end-date').value || null;
+        warranty.status = document.getElementById('edit-warranty-status').value;
+        warranty.updatedDate = now();
+        
+        Storage.saveWarranties(warranties);
+        
+        Modal.close();
+        Toast.success('Warranty updated');
+        Views.render('warranties');
+    },
+    
+    deleteWarranty(warrantyId) {
+        if (!confirm('Delete this warranty?')) return;
+        
+        const warranties = Storage.getWarranties();
+        const filtered = warranties.filter(w => w.id !== warrantyId);
+        Storage.saveWarranties(filtered);
+        
+        Modal.close();
+        Toast.success('Warranty deleted');
+        Views.render('warranties');
+    }
+};
+
+window.WarrantiesView = WarrantiesView;
+
+// ==========================================
+// PUNCH LISTS VIEW
+// ==========================================
+const PunchListsView = {
+    render(container) {
+        const punchLists = Storage.getPunchLists();
+        const jobs = Storage.getJobs();
+        
+        const sorted = punchLists.sort((a, b) => new Date(b.updatedDate) - new Date(a.updatedDate));
+        
+        let html = `
+            <div class="view-header">
+                <button class="btn btn-primary" onclick="PunchListsView.createNew()">
+                    <span>+ New Punch List</span>
+                </button>
+            </div>
+            <div class="card-list">
+        `;
+        
+        if (sorted.length === 0) {
+            html += `
+                <div class="empty-state">
+                    <p>No punch lists yet.</p>
+                    <p class="text-muted">Track remaining tasks and closeout items.</p>
+                </div>
+            `;
+        } else {
+            sorted.forEach(pl => {
+                const job = jobs.find(j => j.id === pl.jobId);
+                const totalItems = pl.items ? pl.items.length : 0;
+                const completedItems = pl.items ? pl.items.filter(i => i.status === 'completed').length : 0;
+                const percent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+                
+                html += `
+                    <div class="card" onclick="PunchListsView.viewPunchList('${pl.id}')">
+                        <div class="card-header">
+                            <span class="punch-status">${pl.status}</span>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title">${pl.title}</h3>
+                            <p class="card-meta">${job ? job.name : 'No job linked'}</p>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width:${percent}%"></div>
+                            </div>
+                            <p class="progress-text">${completedItems}/${totalItems} complete (${percent}%)</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+    
+    createNew(jobId = null) {
+        const jobs = Storage.getJobs();
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'New Punch List';
+        content.innerHTML = `
+            <form id="punchlist-form" class="form">
+                <div class="form-group">
+                    <label>Job</label>
+                    <select id="punchlist-job-id" required>
+                        <option value="">Select a job...</option>
+                        ${jobs.map(j => `<option value="${j.id}" ${j.id === jobId ? 'selected' : ''}>${j.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="punchlist-title" value="Punch List" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('punchlist-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.savePunchList();
+        });
+    },
+    
+    savePunchList() {
+        const punchLists = Storage.getPunchLists();
+        
+        const pl = createPunchList({
+            jobId: document.getElementById('punchlist-job-id').value,
+            title: document.getElementById('punchlist-title').value
+        });
+        
+        punchLists.push(pl);
+        Storage.savePunchLists(punchLists);
+        
+        Modal.close();
+        Toast.success('Punch list created');
+        Views.render('punchlists');
+    },
+    
+    viewPunchList(punchListId) {
+        const pl = Storage.getPunchLists().find(p => p.id === punchListId);
+        if (!pl) return;
+        
+        const job = Storage.getJobs().find(j => j.id === pl.jobId);
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = pl.title;
+        
+        const totalItems = pl.items ? pl.items.length : 0;
+        const completedItems = pl.items ? pl.items.filter(i => i.status === 'completed').length : 0;
+        
+        content.innerHTML = `
+            <div class="punchlist-view">
+                <div class="punchlist-header">
+                    <p class="text-muted">${job ? job.name : 'No job linked'}</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width:${totalItems > 0 ? (completedItems/totalItems)*100 : 0}%"></div>
+                    </div>
+                    <p>${completedItems}/${totalItems} complete</p>
+                </div>
+                
+                <div class="punchlist-items">
+                    ${this.renderPunchItems(pl)}
+                </div>
+                
+                <button class="btn btn-primary" onclick="PunchListsView.addItem('${pl.id}')">+ Add Item</button>
+                
+                <div class="punchlist-actions">
+                    <button class="btn btn-secondary" onclick="PunchListsView.printPunchList('${pl.id}')">Print</button>
+                    <button class="btn btn-danger" onclick="PunchListsView.deletePunchList('${pl.id}')">Delete</button>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+        window.currentPunchListId = punchListId;
+    },
+    
+    renderPunchItems(pl) {
+        if (!pl.items || pl.items.length === 0) {
+            return '<p class="text-muted">No items yet.</p>';
+        }
+        
+        return pl.items.map(item => `
+            <div class="punch-item ${item.status}" onclick="event.stopPropagation()">
+                <div class="punch-item-check">
+                    <input type="checkbox" ${item.status === 'completed' ? 'checked' : ''} 
+                           onchange="PunchListsView.toggleItem('${pl.id}', '${item.id}')">
+                </div>
+                <div class="punch-item-content">
+                    <p class="punch-item-title">${item.title}</p>
+                    <p class="punch-item-meta">${item.roomArea} | ${item.priority}</p>
+                </div>
+                <button class="btn-icon" onclick="PunchListsView.editItem('${pl.id}', '${item.id}')">✎</button>
+            </div>
+        `).join('');
+    },
+    
+    addItem(punchListId) {
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Add Punch Item';
+        content.innerHTML = `
+            <form id="punchitem-form" class="form">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="punchitem-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="punchitem-description"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Room/Area</label>
+                        <input type="text" id="punchitem-room">
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="punchitem-priority">
+                            ${PUNCH_ITEM_PRIORITIES.map(p => `<option value="${p.value}">${p.label}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Due Date</label>
+                    <input type="date" id="punchitem-due-date">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="PunchListsView.viewPunchList('${punchListId}')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('punchitem-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveItem(punchListId);
+        });
+    },
+    
+    saveItem(punchListId) {
+        const punchLists = Storage.getPunchLists();
+        const pl = punchLists.find(p => p.id === punchListId);
+        if (!pl) return;
+        
+        if (!pl.items) pl.items = [];
+        
+        pl.items.push(createPunchItem({
+            title: document.getElementById('punchitem-title').value,
+            description: document.getElementById('punchitem-description').value,
+            roomArea: document.getElementById('punchitem-room').value,
+            priority: document.getElementById('punchitem-priority').value,
+            dueDate: document.getElementById('punchitem-due-date').value || null
+        }));
+        
+        pl.updatedDate = now();
+        Storage.savePunchLists(punchLists);
+        
+        Modal.close();
+        Toast.success('Item added');
+        this.viewPunchList(punchListId);
+    },
+    
+    toggleItem(punchListId, itemId) {
+        const punchLists = Storage.getPunchLists();
+        const pl = punchLists.find(p => p.id === punchListId);
+        if (!pl || !pl.items) return;
+        
+        const item = pl.items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        item.status = item.status === 'completed' ? 'open' : 'completed';
+        item.completionDate = item.status === 'completed' ? now() : null;
+        pl.updatedDate = now();
+        
+        Storage.savePunchLists(punchLists);
+        
+        this.viewPunchList(punchListId);
+    },
+    
+    editItem(punchListId, itemId) {
+        const punchLists = Storage.getPunchLists();
+        const pl = punchLists.find(p => p.id === punchListId);
+        if (!pl || !pl.items) return;
+        
+        const item = pl.items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Edit Punch Item';
+        content.innerHTML = `
+            <form id="punchitem-edit-form" class="form">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="edit-punchitem-title" value="${item.title}">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="edit-punchitem-description">${item.description || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Room/Area</label>
+                    <input type="text" id="edit-punchitem-room" value="${item.roomArea || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="edit-punchitem-priority">
+                        ${PUNCH_ITEM_PRIORITIES.map(p => `<option value="${p.value}" ${p.value === item.priority ? 'selected' : ''}>${p.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" onclick="PunchListsView.deleteItem('${punchListId}', '${itemId}')">Delete</button>
+                    <button type="button" class="btn btn-secondary" onclick="PunchListsView.viewPunchList('${punchListId}')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('punchitem-edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateItem(punchListId, itemId);
+        });
+    },
+    
+    updateItem(punchListId, itemId) {
+        const punchLists = Storage.getPunchLists();
+        const pl = punchLists.find(p => p.id === punchListId);
+        if (!pl || !pl.items) return;
+        
+        const item = pl.items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        item.title = document.getElementById('edit-punchitem-title').value;
+        item.description = document.getElementById('edit-punchitem-description').value;
+        item.roomArea = document.getElementById('edit-punchitem-room').value;
+        item.priority = document.getElementById('edit-punchitem-priority').value;
+        pl.updatedDate = now();
+        
+        Storage.savePunchLists(punchLists);
+        
+        Modal.close();
+        Toast.success('Item updated');
+        this.viewPunchList(punchListId);
+    },
+    
+    deleteItem(punchListId, itemId) {
+        if (!confirm('Delete this item?')) return;
+        
+        const punchLists = Storage.getPunchLists();
+        const pl = punchLists.find(p => p.id === punchListId);
+        if (!pl || !pl.items) return;
+        
+        pl.items = pl.items.filter(i => i.id !== itemId);
+        pl.updatedDate = now();
+        
+        Storage.savePunchLists(punchLists);
+        
+        Modal.close();
+        Toast.success('Item deleted');
+        this.viewPunchList(punchListId);
+    },
+    
+    printPunchList(punchListId) {
+        const pl = Storage.getPunchLists().find(p => p.id === punchListId);
+        if (!pl) return;
+        
+        const job = Storage.getJobs().find(j => j.id === pl.jobId);
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${pl.title}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                    h1 { text-align: center; }
+                    .item { display: flex; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #eee; }
+                    .checkbox { width: 20px; height: 20px; border: 1px solid #333; margin-right: 15px; }
+                    .title { flex: 1; }
+                    .meta { color: #666; font-size: 12px; }
+                    .priority-high { color: #c00; }
+                    .priority-medium { color: #c90; }
+                </style>
+            </head>
+            <body>
+                <h1>${pl.title}</h1>
+                ${job ? `<p><strong>Job:</strong> ${job.name}</p>` : ''}
+                
+                ${pl.items && pl.items.length > 0 ? pl.items.map(item => `
+                    <div class="item">
+                        <div class="checkbox"></div>
+                        <div>
+                            <div class="title">${item.title}</div>
+                            <div class="meta">${item.roomArea} | ${item.priority}</div>
+                        </div>
+                    </div>
+                `).join('') : '<p>No items</p>'}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    },
+    
+    deletePunchList(punchListId) {
+        if (!confirm('Delete this punch list?')) return;
+        
+        const punchLists = Storage.getPunchLists();
+        const filtered = punchLists.filter(p => p.id !== punchListId);
+        Storage.savePunchLists(filtered);
+        
+        Modal.close();
+        Toast.success('Punch list deleted');
+        Views.render('punchlists');
+    }
+};
+
+window.PunchListsView = PunchListsView;
+
+// ==========================================
+// MATERIALS VIEW
+// ==========================================
+const MaterialsView = {
+    render(container) {
+        const materialLists = Storage.getMaterialLists();
+        const jobs = Storage.getJobs();
+        
+        const sorted = materialLists.sort((a, b) => new Date(b.updatedDate) - new Date(a.updatedDate));
+        
+        let html = `
+            <div class="view-header">
+                <button class="btn btn-primary" onclick="MaterialsView.createNew()">
+                    <span>+ New Material List</span>
+                </button>
+            </div>
+            <div class="card-list">
+        `;
+        
+        if (sorted.length === 0) {
+            html += `
+                <div class="empty-state">
+                    <p>No material lists yet.</p>
+                    <p class="text-muted">Create shopping lists for jobs.</p>
+                </div>
+            `;
+        } else {
+            sorted.forEach(ml => {
+                const job = jobs.find(j => j.id === ml.jobId);
+                const totalItems = ml.items ? ml.items.length : 0;
+                const orderedItems = ml.items ? ml.items.filter(i => i.ordered).length : 0;
+                const totalCost = ml.items ? ml.items.reduce((sum, i) => sum + (i.estimatedCost || 0), 0) : 0;
+                
+                html += `
+                    <div class="card" onclick="MaterialsView.viewMaterialList('${ml.id}')">
+                        <div class="card-header">
+                            <span class="material-status">${ml.status}</span>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title">${ml.title}</h3>
+                            <p class="card-meta">${job ? job.name : 'No job linked'}</p>
+                            <p class="card-amount">Est: ${formatCurrency(totalCost)}</p>
+                            <p class="card-meta">${orderedItems}/${totalItems} ordered</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+    
+    createNew(jobId = null, estimateId = null) {
+        const jobs = Storage.getJobs();
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'New Material List';
+        content.innerHTML = `
+            <form id="materiallist-form" class="form">
+                <div class="form-group">
+                    <label>Job</label>
+                    <select id="materiallist-job-id" required>
+                        <option value="">Select a job...</option>
+                        ${jobs.map(j => `<option value="${j.id}" ${j.id === jobId ? 'selected' : ''}>${j.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="materiallist-title" value="Material List" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('materiallist-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveMaterialList();
+        });
+    },
+    
+    saveMaterialList() {
+        const materialLists = Storage.getMaterialLists();
+        
+        const ml = createMaterialList({
+            jobId: document.getElementById('materiallist-job-id').value,
+            title: document.getElementById('materiallist-title').value
+        });
+        
+        materialLists.push(ml);
+        Storage.saveMaterialLists(materialLists);
+        
+        Modal.close();
+        Toast.success('Material list created');
+        Views.render('materials');
+    },
+    
+    viewMaterialList(materialListId) {
+        const ml = Storage.getMaterialLists().find(m => m.id === materialListId);
+        if (!ml) return;
+        
+        const job = Storage.getJobs().find(j => j.id === ml.jobId);
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = ml.title;
+        
+        const totalEst = ml.items ? ml.items.reduce((s, i) => s + (i.estimatedCost || 0), 0) : 0;
+        const orderedCount = ml.items ? ml.items.filter(i => i.ordered).length : 0;
+        
+        content.innerHTML = `
+            <div class="materiallist-view">
+                <div class="materiallist-header">
+                    <p class="text-muted">${job ? job.name : 'No job linked'}</p>
+                    <p><strong>Total Estimated:</strong> ${formatCurrency(totalEst)}</p>
+                    <p>${orderedCount}/${ml.items ? ml.items.length : 0} ordered</p>
+                </div>
+                
+                <div class="materiallist-items">
+                    ${this.renderMaterialItems(ml)}
+                </div>
+                
+                <button class="btn btn-primary" onclick="MaterialsView.addItem('${ml.id}')">+ Add Item</button>
+                
+                <div class="materiallist-actions">
+                    <button class="btn btn-secondary" onclick="MaterialsView.printMaterialList('${ml.id}')">Print</button>
+                    <button class="btn btn-danger" onclick="MaterialsView.deleteMaterialList('${ml.id}')">Delete</button>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+        window.currentMaterialListId = materialListId;
+    },
+    
+    renderMaterialItems(ml) {
+        if (!ml.items || ml.items.length === 0) {
+            return '<p class="text-muted">No items yet.</p>';
+        }
+        
+        const grouped = {};
+        ml.items.forEach(item => {
+            const cat = item.category || 'misc';
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(item);
+        });
+        
+        let html = '';
+        for (const cat in grouped) {
+            html += `<div class="material-category"><h4>${cat.toUpperCase()}</h4>`;
+            html += grouped[cat].map(item => `
+                <div class="material-item" onclick="event.stopPropagation()">
+                    <div class="material-item-check">
+                        <input type="checkbox" ${item.ordered ? 'checked' : ''} 
+                               onchange="MaterialsView.toggleOrdered('${ml.id}', '${item.id}')">
+                    </div>
+                    <div class="material-item-content" onclick="MaterialsView.editItem('${ml.id}', '${item.id}')">
+                        <p class="material-item-name">${item.name}</p>
+                        <p class="material-item-meta">${item.quantity} ${item.unit} | ${formatCurrency(item.estimatedCost)}</p>
+                    </div>
+                    ${item.received ? '<span class="badge badge-success">✓</span>' : ''}
+                </div>
+            `).join('');
+            html += '</div>';
+        }
+        
+        return html;
+    },
+    
+    addItem(materialListId) {
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Add Material Item';
+        content.innerHTML = `
+            <form id="materialitem-form" class="form">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="materialitem-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="materialitem-description">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="materialitem-quantity" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Unit</label>
+                        <select id="materialitem-unit">
+                            ${MATERIAL_UNITS.map(u => `<option value="${u.value}">${u.label}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="materialitem-category">
+                            ${MATERIAL_CATEGORIES.map(c => `<option value="${c.value}">${c.label}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Room/Area</label>
+                        <input type="text" id="materialitem-room">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Vendor</label>
+                    <input type="text" id="materialitem-vendor">
+                </div>
+                <div class="form-group">
+                    <label>Estimated Cost</label>
+                    <input type="number" id="materialitem-cost" step="0.01" value="0">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="MaterialsView.viewMaterialList('${materialListId}')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('materialitem-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveItem(materialListId);
+        });
+    },
+    
+    saveItem(materialListId) {
+        const materialLists = Storage.getMaterialLists();
+        const ml = materialLists.find(m => m.id === materialListId);
+        if (!ml) return;
+        
+        if (!ml.items) ml.items = [];
+        
+        ml.items.push(createMaterialItem({
+            name: document.getElementById('materialitem-name').value,
+            description: document.getElementById('materialitem-description').value,
+            quantity: parseFloat(document.getElementById('materialitem-quantity').value) || 1,
+            unit: document.getElementById('materialitem-unit').value,
+            category: document.getElementById('materialitem-category').value,
+            roomArea: document.getElementById('materialitem-room').value,
+            vendor: document.getElementById('materialitem-vendor').value,
+            estimatedCost: parseFloat(document.getElementById('materialitem-cost').value) || 0
+        }));
+        
+        ml.updatedDate = now();
+        Storage.saveMaterialLists(materialLists);
+        
+        Modal.close();
+        Toast.success('Item added');
+        this.viewMaterialList(materialListId);
+    },
+    
+    toggleOrdered(materialListId, itemId) {
+        const materialLists = Storage.getMaterialLists();
+        const ml = materialLists.find(m => m.id === materialListId);
+        if (!ml || !ml.items) return;
+        
+        const item = ml.items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        item.ordered = !item.ordered;
+        ml.updatedDate = now();
+        
+        Storage.saveMaterialLists(materialLists);
+        this.viewMaterialList(materialListId);
+    },
+    
+    editItem(materialListId, itemId) {
+        const materialLists = Storage.getMaterialLists();
+        const ml = materialLists.find(m => m.id === materialListId);
+        if (!ml || !ml.items) return;
+        
+        const item = ml.items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Edit Material Item';
+        content.innerHTML = `
+            <form id="materialitem-edit-form" class="form">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="edit-materialitem-name" value="${item.name}">
+                </div>
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="edit-materialitem-quantity" value="${item.quantity}" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Unit</label>
+                    <select id="edit-materialitem-unit">
+                        ${MATERIAL_UNITS.map(u => `<option value="${u.value}" ${u.value === item.unit ? 'selected' : ''}>${u.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="edit-materialitem-category">
+                        ${MATERIAL_CATEGORIES.map(c => `<option value="${c.value}" ${c.value === item.category ? 'selected' : ''}>${c.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estimated Cost</label>
+                    <input type="number" id="edit-materialitem-cost" step="0.01" value="${item.estimatedCost || 0}">
+                </div>
+                <div class="form-group">
+                    <label>Received</label>
+                    <input type="checkbox" id="edit-materialitem-received" ${item.received ? 'checked' : ''}>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" onclick="MaterialsView.deleteItem('${materialListId}', '${itemId}')">Delete</button>
+                    <button type="button" class="btn btn-secondary" onclick="MaterialsView.viewMaterialList('${materialListId}')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('materialitem-edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateItem(materialListId, itemId);
+        });
+    },
+    
+    updateItem(materialListId, itemId) {
+        const materialLists = Storage.getMaterialLists();
+        const ml = materialLists.find(m => m.id === materialListId);
+        if (!ml || !ml.items) return;
+        
+        const item = ml.items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        item.name = document.getElementById('edit-materialitem-name').value;
+        item.quantity = parseFloat(document.getElementById('edit-materialitem-quantity').value) || 1;
+        item.unit = document.getElementById('edit-materialitem-unit').value;
+        item.category = document.getElementById('edit-materialitem-category').value;
+        item.estimatedCost = parseFloat(document.getElementById('edit-materialitem-cost').value) || 0;
+        item.received = document.getElementById('edit-materialitem-received').checked;
+        ml.updatedDate = now();
+        
+        Storage.saveMaterialLists(materialLists);
+        
+        Modal.close();
+        Toast.success('Item updated');
+        this.viewMaterialList(materialListId);
+    },
+    
+    deleteItem(materialListId, itemId) {
+        if (!confirm('Delete this item?')) return;
+        
+        const materialLists = Storage.getMaterialLists();
+        const ml = materialLists.find(m => m.id === materialListId);
+        if (!ml || !ml.items) return;
+        
+        ml.items = ml.items.filter(i => i.id !== itemId);
+        ml.updatedDate = now();
+        
+        Storage.saveMaterialLists(materialLists);
+        
+        Modal.close();
+        Toast.success('Item deleted');
+        this.viewMaterialList(materialListId);
+    },
+    
+    printMaterialList(materialListId) {
+        const ml = Storage.getMaterialLists().find(m => m.id === materialListId);
+        if (!ml) return;
+        
+        const job = Storage.getJobs().find(j => j.id === ml.jobId);
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${ml.title}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                    h1 { text-align: center; }
+                    .item { display: flex; padding: 8px 0; border-bottom: 1px solid #eee; }
+                    .checkbox { width: 15px; height: 15px; border: 1px solid #333; margin-right: 10px; }
+                    .name { flex: 1; }
+                    .qty { width: 60px; }
+                    .cost { width: 80px; text-align: right; }
+                </style>
+            </head>
+            <body>
+                <h1>${ml.title}</h1>
+                ${job ? `<p><strong>Job:</strong> ${job.name}</p>` : ''}
+                
+                <table style="width:100%;margin-top:20px;">
+                    <tr style="font-weight:bold;border-bottom:2px solid #333;">
+                        <td></td><td>Item</td><td>Qty</td><td style="text-align:right;">Est Cost</td>
+                    </tr>
+                    ${ml.items ? ml.items.map(item => `
+                        <tr class="item">
+                            <td><div class="checkbox"></div></td>
+                            <td>${item.name}</td>
+                            <td>${item.quantity} ${item.unit}</td>
+                            <td class="cost">${formatCurrency(item.estimatedCost)}</td>
+                        </tr>
+                    `).join('') : ''}
+                </table>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    },
+    
+    deleteMaterialList(materialListId) {
+        if (!confirm('Delete this material list?')) return;
+        
+        const materialLists = Storage.getMaterialLists();
+        const filtered = materialLists.filter(m => m.id !== materialListId);
+        Storage.saveMaterialLists(filtered);
+        
+        Modal.close();
+        Toast.success('Material list deleted');
+        Views.render('materials');
+    }
+};
+
+window.MaterialsView = MaterialsView;
