@@ -16,11 +16,16 @@ const STORAGE_KEYS = {
     PAYMENTS: 'allen_payments',
     BRANDING: 'allen_branding',
     TEAM_MEMBERS: 'allen_team_members',
+    CONTRACTS: 'allen_contracts',
+    WARRANTIES: 'allen_warranties',
+    PUNCH_LISTS: 'allen_punch_lists',
+    MATERIAL_LISTS: 'allen_material_lists',
+    COMMUNICATION_LOGS: 'allen_communication_logs',
     INITIALIZED: 'allen_initialized',
     VERSION: 'allen_version'
 };
 
-const CURRENT_VERSION = '5.0.0';
+const CURRENT_VERSION = '6.0.0';
 
 const Storage = {
     initializeStorage() {
@@ -65,6 +70,12 @@ const Storage = {
         this.ensureKey(STORAGE_KEYS.INVOICES, []);
         this.ensureKey(STORAGE_KEYS.PAYMENTS, []);
         this.ensureKey(STORAGE_KEYS.BRANDING, {});
+        this.ensureKey(STORAGE_KEYS.TEAM_MEMBERS, []);
+        this.ensureKey(STORAGE_KEYS.CONTRACTS, []);
+        this.ensureKey(STORAGE_KEYS.WARRANTIES, []);
+        this.ensureKey(STORAGE_KEYS.PUNCH_LISTS, []);
+        this.ensureKey(STORAGE_KEYS.MATERIAL_LISTS, []);
+        this.ensureKey(STORAGE_KEYS.COMMUNICATION_LOGS, []);
         console.log('[Storage] Data validation complete');
     },
 
@@ -117,6 +128,11 @@ const Storage = {
         localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify([]));
         localStorage.setItem(STORAGE_KEYS.BRANDING, JSON.stringify({}));
         localStorage.setItem(STORAGE_KEYS.TEAM_MEMBERS, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.CONTRACTS, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.WARRANTIES, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.PUNCH_LISTS, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.MATERIAL_LISTS, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.COMMUNICATION_LOGS, JSON.stringify([]));
         
         console.log('[Storage] Default data seeded');
     },
@@ -303,6 +319,71 @@ const Storage = {
         catch (e) { return false; }
     },
 
+    // Contracts
+    getContracts() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.CONTRACTS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveContracts(contracts) {
+        try { localStorage.setItem(STORAGE_KEYS.CONTRACTS, JSON.stringify(contracts)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Warranties
+    getWarranties() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.WARRANTIES);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveWarranties(warranties) {
+        try { localStorage.setItem(STORAGE_KEYS.WARRANTIES, JSON.stringify(warranties)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Punch Lists
+    getPunchLists() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.PUNCH_LISTS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    savePunchLists(punchLists) {
+        try { localStorage.setItem(STORAGE_KEYS.PUNCH_LISTS, JSON.stringify(punchLists)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Material Lists
+    getMaterialLists() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.MATERIAL_LISTS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveMaterialLists(materialLists) {
+        try { localStorage.setItem(STORAGE_KEYS.MATERIAL_LISTS, JSON.stringify(materialLists)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Communication Logs
+    getCommunicationLogs() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.COMMUNICATION_LOGS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveCommunicationLogs(logs) {
+        try { localStorage.setItem(STORAGE_KEYS.COMMUNICATION_LOGS, JSON.stringify(logs)); return true; }
+        catch (e) { return false; }
+    },
+
     // Backup
     getBackupData() {
         try {
@@ -322,7 +403,12 @@ const Storage = {
                 invoices: this.getInvoices(),
                 payments: this.getPayments(),
                 branding: this.getBranding(),
-                teamMembers: this.getTeamMembers()
+                teamMembers: this.getTeamMembers(),
+                contracts: this.getContracts(),
+                warranties: this.getWarranties(),
+                punchLists: this.getPunchLists(),
+                materialLists: this.getMaterialLists(),
+                communicationLogs: this.getCommunicationLogs()
             };
         } catch (e) {
             console.error('[Storage] Backup error:', e);
@@ -349,6 +435,11 @@ const Storage = {
                 if (data.payments) this.savePayments(data.payments);
                 if (data.branding) this.saveBranding(data.branding);
                 if (data.teamMembers) this.saveTeamMembers(data.teamMembers);
+                if (data.contracts) this.saveContracts(data.contracts);
+                if (data.warranties) this.saveWarranties(data.warranties);
+                if (data.punchLists) this.savePunchLists(data.punchLists);
+                if (data.materialLists) this.saveMaterialLists(data.materialLists);
+                if (data.communicationLogs) this.saveCommunicationLogs(data.communicationLogs);
             }
             
             localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);

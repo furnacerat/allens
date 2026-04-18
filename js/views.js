@@ -86,6 +86,10 @@ const Views = {
             subbids: 'Subcontractor Bids',
             jobcosts: 'Job Costs',
             invoices: 'Invoices',
+            contracts: 'Contracts',
+            warranties: 'Warranties',
+            punchlists: 'Punch Lists',
+            materials: 'Materials',
             settings: 'Settings'
         };
 
@@ -110,6 +114,10 @@ const Views = {
             subbids: () => SubBidsView.render(content),
             jobcosts: () => JobCostsView.render(content),
             invoices: () => InvoicesView.render(content),
+            contracts: () => this.renderContracts(content),
+            warranties: () => this.renderWarranties(content),
+            punchlists: () => this.renderPunchLists(content),
+            materials: () => this.renderMaterials(content),
             settings: () => this.renderSettings(content)
         };
 

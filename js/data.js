@@ -1133,6 +1133,253 @@ window.TEAM_ROLES = TEAM_ROLES;
 window.INVOICE_STATUSES = INVOICE_STATUSES;
 window.INVOICE_TYPES = INVOICE_TYPES;
 window.PAYMENT_METHODS = PAYMENT_METHODS;
-window.seedDefaultData = seedDefaultData;
+
+// Contract Statuses
+const CONTRACT_STATUSES = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'issued', label: 'Issued' },
+    { value: 'signed', label: 'Signed' },
+    { value: 'rejected', label: 'Rejected' },
+    { value: 'void', label: 'Void' }
+];
+
+// Warranty Types
+const WARRANTY_TYPES = [
+    { value: 'labor', label: 'Labor' },
+    { value: 'material', label: 'Material' },
+    { value: 'manufacturer', label: 'Manufacturer' },
+    { value: 'workmanship', label: 'Workmanship' },
+    { value: 'other', label: 'Other' }
+];
+
+// Warranty Statuses
+const WARRANTY_STATUSES = [
+    { value: 'active', label: 'Active' },
+    { value: 'expired', label: 'Expired' },
+    { value: 'void', label: 'Void' }
+];
+
+// Punch List Statuses
+const PUNCH_LIST_STATUSES = [
+    { value: 'open', label: 'Open' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' }
+];
+
+// Punch Item Priorities
+const PUNCH_ITEM_PRIORITIES = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' }
+];
+
+// Punch Item Statuses
+const PUNCH_ITEM_STATUSES = [
+    { value: 'open', label: 'Open' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' }
+];
+
+// Material List Statuses
+const MATERIAL_LIST_STATUSES = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'active', label: 'Active' },
+    { value: 'ordered', label: 'Ordered' },
+    { value: 'complete', label: 'Complete' }
+];
+
+// Material Units
+const MATERIAL_UNITS = [
+    { value: 'ea', label: 'Each' },
+    { value: 'box', label: 'Box' },
+    { value: 'sqft', label: 'Sq Ft' },
+    { value: 'lnft', label: 'Lin Ft' },
+    { value: 'gal', label: 'Gallon' },
+    { value: 'qt', label: 'Quart' },
+    { value: 'lb', label: 'Pound' },
+    { value: 'roll', label: 'Roll' },
+    { value: 'bundle', label: 'Bundle' },
+    { value: 'pallet', label: 'Pallet' }
+];
+
+// Material Categories
+const MATERIAL_CATEGORIES = [
+    { value: 'lumber', label: 'Lumber' },
+    { value: 'drywall', label: 'Drywall' },
+    { value: 'flooring', label: 'Flooring' },
+    { value: 'tile', label: 'Tile' },
+    { value: 'paint', label: 'Paint' },
+    { value: 'electrical', label: 'Electrical' },
+    { value: 'plumbing', label: 'Plumbing' },
+    { value: 'hardware', label: 'Hardware' },
+    { value: 'fasteners', label: 'Fasteners' },
+    { value: 'tools', label: 'Tools' },
+    { value: 'misc', label: 'Miscellaneous' }
+];
+
+// Communication Types
+const COMMUNICATION_TYPES = [
+    { value: 'call', label: 'Phone Call' },
+    { value: 'text', label: 'Text Message' },
+    { value: 'email', label: 'Email' },
+    { value: 'in_person', label: 'In Person' },
+    { value: 'other', label: 'Other' }
+];
+
+window.CONTRACT_STATUSES = CONTRACT_STATUSES;
+window.WARRANTY_TYPES = WARRANTY_TYPES;
+window.WARRANTY_STATUSES = WARRANTY_STATUSES;
+window.PUNCH_LIST_STATUSES = PUNCH_LIST_STATUSES;
+window.PUNCH_ITEM_PRIORITIES = PUNCH_ITEM_PRIORITIES;
+window.PUNCH_ITEM_STATUSES = PUNCH_ITEM_STATUSES;
+window.MATERIAL_LIST_STATUSES = MATERIAL_LIST_STATUSES;
+window.MATERIAL_UNITS = MATERIAL_UNITS;
+window.MATERIAL_CATEGORIES = MATERIAL_CATEGORIES;
+window.COMMUNICATION_TYPES = COMMUNICATION_TYPES;
+
+// Create Contract
+function createContract(data = {}) {
+    return {
+        id: data.id || generateId(),
+        contractNumber: data.contractNumber || generateContractNumber(),
+        jobId: data.jobId || null,
+        estimateId: data.estimateId || null,
+        proposalId: data.proposalId || null,
+        title: data.title || '',
+        status: data.status || 'draft',
+        issueDate: data.issueDate || null,
+        effectiveDate: data.effectiveDate || null,
+        startDate: data.startDate || null,
+        completionDate: data.completionDate || null,
+        amount: data.amount || 0,
+        scopeSummary: data.scopeSummary || '',
+        exclusions: data.exclusions || '',
+        termsConditions: data.termsConditions || '',
+        paymentTerms: data.paymentTerms || '',
+        cancellationText: data.cancellationText || '',
+        warrantyText: data.warrantyText || '',
+        customerSignature: data.customerSignature || null,
+        contractorSignature: data.contractorSignature || null,
+        signedDate: data.signedDate || null,
+        preparedBy: data.preparedBy || '',
+        createdBy: data.createdBy || '',
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+function generateContractNumber() {
+    const year = new Date().getFullYear();
+    const count = Storage.getContracts().length + 1;
+    return `CON-${year}-${count.toString().padStart(4, '0')}`;
+}
+
+// Create Warranty
+function createWarranty(data = {}) {
+    return {
+        id: data.id || generateId(),
+        jobId: data.jobId || null,
+        contractId: data.contractId || null,
+        title: data.title || '',
+        type: data.type || 'labor',
+        coverageDescription: data.coverageDescription || '',
+        startDate: data.startDate || null,
+        endDate: data.endDate || null,
+        status: data.status || 'active',
+        exclusions: data.exclusions || '',
+        notes: data.notes || '',
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+// Create Punch List
+function createPunchList(data = {}) {
+    return {
+        id: data.id || generateId(),
+        jobId: data.jobId || null,
+        title: data.title || 'Punch List',
+        status: data.status || 'open',
+        items: data.items || [],
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+// Create Punch List Item
+function createPunchItem(data = {}) {
+    return {
+        id: data.id || generateId(),
+        title: data.title || '',
+        description: data.description || '',
+        roomArea: data.roomArea || '',
+        priority: data.priority || 'medium',
+        assignedTo: data.assignedTo || '',
+        status: data.status || 'open',
+        dueDate: data.dueDate || null,
+        completionDate: data.completionDate || null,
+        photoRef: data.photoRef || null,
+        notes: data.notes || ''
+    };
+}
+
+// Create Material List
+function createMaterialList(data = {}) {
+    return {
+        id: data.id || generateId(),
+        jobId: data.jobId || null,
+        estimateId: data.estimateId || null,
+        title: data.title || 'Material List',
+        status: data.status || 'draft',
+        items: data.items || [],
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+// Create Material Item
+function createMaterialItem(data = {}) {
+    return {
+        id: data.id || generateId(),
+        name: data.name || '',
+        description: data.description || '',
+        quantity: data.quantity || 1,
+        unit: data.unit || 'ea',
+        category: data.category || 'misc',
+        roomArea: data.roomArea || '',
+        vendor: data.vendor || '',
+        estimatedCost: data.estimatedCost || 0,
+        actualCost: data.actualCost || 0,
+        ordered: data.ordered || false,
+        received: data.received || false,
+        notes: data.notes || ''
+    };
+}
+
+// Create Communication Log
+function createCommunicationLog(data = {}) {
+    return {
+        id: data.id || generateId(),
+        jobId: data.jobId || null,
+        dateTime: data.dateTime || now(),
+        type: data.type || 'call',
+        contactPerson: data.contactPerson || '',
+        subject: data.subject || '',
+        notes: data.notes || '',
+        followUpNeeded: data.followUpNeeded || false,
+        followUpDate: data.followUpDate || null,
+        createdBy: data.createdBy || '',
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+window.createContract = createContract;
+window.createWarranty = createWarranty;
+window.createPunchList = createPunchList;
+window.createPunchItem = createPunchItem;
+window.createMaterialList = createMaterialList;
+window.createMaterialItem = createMaterialItem;
+window.createCommunicationLog = createCommunicationLog;
 window.getSeedData = getSeedData;
 window.getRoomLabel = getRoomLabel;
