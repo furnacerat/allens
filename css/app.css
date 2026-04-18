@@ -1862,3 +1862,310 @@ body {
         margin-right: var(--space-md);
     }
 }
+
+/* Phase 6: Contracts & Documents */
+.contract-view, .warranty-view, .punchlist-view, .materiallist-view {
+    padding: var(--space-md);
+}
+
+.contract-header-section, .warranty-header, .punchlist-header, .materiallist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-lg);
+}
+
+.contract-details, .warranty-details {
+    display: grid;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-xs) 0;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.contract-section, .warranty-section {
+    margin: var(--space-lg) 0;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-light);
+}
+
+.contract-section h4, .warranty-section h4 {
+    margin-bottom: var(--space-sm);
+    font-weight: 600;
+}
+
+.contract-actions, .warranty-actions, .punchlist-actions, .materiallist-actions {
+    display: flex;
+    gap: var(--space-sm);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-light);
+}
+
+/* Signature */
+.signature-section {
+    margin: var(--space-lg) 0;
+    padding: var(--space-md);
+    background: var(--background);
+    border-radius: var(--radius-md);
+}
+
+.signature-section h4 {
+    margin-bottom: var(--space-md);
+}
+
+#customer-sig-pad, #contractor-sig-pad {
+    width: 100%;
+    height: 120px;
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-sm);
+}
+
+/* Punch Items */
+.punch-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm);
+    border-bottom: 1px solid var(--border-light);
+    gap: var(--space-sm);
+}
+
+.punch-item.completed {
+    opacity: 0.6;
+}
+
+.punch-item.completed .punch-item-title {
+    text-decoration: line-through;
+}
+
+.punch-item-check {
+    width: 24px;
+}
+
+.punch-item-content {
+    flex: 1;
+}
+
+.punch-item-title {
+    font-weight: 500;
+}
+
+.punch-item-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Material Items */
+.material-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm);
+    border-bottom: 1px solid var(--border-light);
+    gap: var(--space-sm);
+}
+
+.material-item-check {
+    width: 24px;
+}
+
+.material-item-content {
+    flex: 1;
+}
+
+.material-item-name {
+    font-weight: 500;
+}
+
+.material-item-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.material-category {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 2px solid var(--border);
+}
+
+.material-category h4 {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Job Detail Center */
+.job-detail {
+    padding: var(--space-md);
+}
+
+.job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-xl);
+}
+
+.doc-center h3 {
+    margin-bottom: var(--space-md);
+}
+
+.doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--space-sm);
+}
+
+.doc-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.doc-card:hover {
+    background: var(--background);
+    border-color: var(--primary);
+}
+
+.doc-icon {
+    font-size: 24px;
+    margin-bottom: var(--space-xs);
+}
+
+.doc-label {
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.doc-count {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Closeout */
+.job-closeout h3 {
+    margin-bottom: var(--space-md);
+}
+
+.closeout-progress {
+    margin-bottom: var(--space-md);
+}
+
+.closeout-progress p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: var(--space-xs);
+}
+
+.closeout-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.closeout-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    background: var(--background);
+    border-radius: var(--radius-sm);
+}
+
+.closeout-item.done {
+    background: var(--success-light);
+}
+
+.closeout-item input {
+    width: 18px;
+    height: 18px;
+}
+
+/* Communication Log */
+.comm-log-section {
+    padding: var(--space-md);
+    background: var(--background);
+    border-radius: var(--radius-md);
+}
+
+.comm-log-item {
+    padding: var(--space-md);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-sm);
+    cursor: pointer;
+}
+
+.comm-log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xs);
+}
+
+.comm-log-type {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.comm-log-date {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.comm-log-subject {
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+}
+
+.comm-log-contact {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.comm-log-notes {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: var(--space-xs);
+}
+
+/* Print Styles */
+@media print {
+    .sidebar, .top-bar, .bottom-nav, .modal-overlay, .toast-container {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin: 0;
+        padding: 20px;
+    }
+    
+    body {
+        background: white;
+    }
+    
+    .card, .table-wrapper {
+        border: 1px solid #ddd;
+        box-shadow: none;
+    }
+}

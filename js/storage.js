@@ -99,10 +99,10 @@ const Storage = {
         
         const defaultSettings = {
             companyName: "Allen's Contractor's",
-            contactName: '',
-            phone: '',
-            email: '',
-            address: '',
+            contactName: 'Allen Foster',
+            phone: '555-0100',
+            email: 'allen@allenscontractors.com',
+            address: '123 Main Street, Springfield, IL 62701',
             defaultLaborRate: 65,
             defaultMarkupPercent: 20,
             defaultTaxPercent: 0,
@@ -114,9 +114,59 @@ const Storage = {
             defaultExclusions: 'Permit fees not included unless specified.'
         };
 
+        // Demo Jobs
+        const jobs = [
+            { id: 'job_demo_1', name: '123 Oak Street Flip', customerName: 'Bob Anderson', phone: '555-0101', email: 'bob@email.com', address: '123 Oak Street, Springfield, IL 62701', projectType: 'flip', status: 'completed', squareFootage: 2200, notes: 'Full interior flip. 3 bed, 2 bath ranch.', createdAt: now, updatedAt: now },
+            { id: 'job_demo_2', name: 'Kitchen Remodel - Johnson', customerName: 'Sarah Johnson', phone: '555-0102', email: 'sarah@email.com', address: '456 Maple Ave, Springfield, IL 62702', projectType: 'kitchen', status: 'in_progress', squareFootage: 200, notes: 'Complete kitchen remodel.', createdAt: now, updatedAt: now },
+            { id: 'job_demo_3', name: 'Ridgeview Addition', customerName: 'Mike Williams', phone: '555-0103', email: 'mike@email.com', address: '789 Ridgeview Drive, Springfield, IL 62703', projectType: 'addition', status: 'proposal_sent', squareFootage: 400, notes: '16x24 bedroom addition with bath.', createdAt: now, updatedAt: now }
+        ];
+
+        // Demo Estimates
+        const estimates = [
+            { id: 'est_demo_1', jobId: 'job_demo_1', name: 'Full Rehab Estimate', status: 'approved', refNumber: 'AC-2601-0001', scopeSummary: 'Complete interior remodel including demolition, framing, drywall, paint, flooring, kitchen, bathrooms.', lineItems: [], rooms: [], createdAt: now, updatedAt: now },
+            { id: 'est_demo_2', jobId: 'job_demo_2', name: 'Kitchen Estimate', status: 'draft', refNumber: 'AC-2601-0002', scopeSummary: 'Complete kitchen remodel with new cabinets, countertops.', lineItems: [], rooms: [], createdAt: now, updatedAt: now }
+        ];
+
+        // Demo Contracts (1 signed)
+        const contracts = [
+            { id: 'con_demo_1', contractNumber: 'CON-2026-0001', jobId: 'job_demo_1', estimateId: 'est_demo_1', title: '123 Oak Street Contract', status: 'signed', issueDate: '2026-01-15', effectiveDate: '2026-01-15', startDate: '2026-01-20', completionDate: '2026-02-15', amount: 45000, scopeSummary: 'Complete interior remodel.', exclusions: 'Permit fees not included.', termsConditions: '50% deposit required.', paymentTerms: 'Due upon completion.', cancellationText: '48 hour notice.', warrantyText: '1-year workmanship warranty.', customerSignature: { name: 'Bob Anderson' }, contractorSignature: { name: 'Allen Foster' }, signedDate: '2026-01-15', preparedBy: 'Allen Foster', createdBy: 'Allen Foster', createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Warranties (1 active, 1 expired)
+        const warranties = [
+            { id: 'war_demo_1', jobId: 'job_demo_1', contractId: 'con_demo_1', title: 'Labor Warranty', type: 'workmanship', coverageDescription: 'All labor performed on project', startDate: '2026-01-20', endDate: '2027-01-20', status: 'active', exclusions: '', notes: '', createdDate: now, updatedDate: now },
+            { id: 'war_demo_2', jobId: 'job_demo_1', title: 'Cabinet Warranty', type: 'manufacturer', coverageDescription: 'Cabinet manufacturer warranty', startDate: '2024-01-01', endDate: '2025-01-01', status: 'expired', exclusions: 'Water damage not covered', notes: 'Extended warranty available', createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Punch List (mixed completion)
+        const punchLists = [
+            { id: 'punch_demo_1', jobId: 'job_demo_1', title: 'Final Punch List', status: 'in_progress', items: [
+                { id: 'pi_1', title: 'Touch up paint in master bedroom', description: '', roomArea: 'Master BR', priority: 'medium', status: 'completed', notes: '' },
+                { id: 'pi_2', title: 'Adjust cabinet doors', description: '', roomArea: 'Kitchen', priority: 'high', status: 'open', notes: '' },
+                { id: 'pi_3', title: 'Replace bathroom faucet', description: 'Leaking at base', roomArea: 'Bath 2', priority: 'high', status: 'in_progress', notes: '' },
+                { id: 'pi_4', title: 'Clean gutters', description: '', roomArea: 'Exterior', priority: 'low', status: 'completed', notes: '' }
+            ], createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Material List (ordered/unordered)
+        const materialLists = [
+            { id: 'mat_demo_1', jobId: 'job_demo_2', title: 'Kitchen Materials', status: 'active', items: [
+                { id: 'mi_1', name: 'Cabinet Pulls', description: 'Oil rubbed bronze', quantity: 24, unit: 'ea', category: 'hardware', estimatedCost: 48, ordered: true, received: false },
+                { id: 'mi_2', name: 'LED Lights', description: '6 inch recessed', quantity: 6, unit: 'ea', category: 'electrical', estimatedCost: 120, ordered: true, received: true },
+                { id: 'mi_3', name: 'Faucet', description: 'Brushed nickel', quantity: 1, unit: 'ea', category: 'plumbing', estimatedCost: 280, ordered: false, received: false },
+                { id: 'mi_4', name: 'Dishwasher', description: 'Bosch 800 series', quantity: 1, unit: 'ea', category: 'appliance', estimatedCost: 850, ordered: false, received: false }
+            ], createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Communication Log (with follow-up)
+        const communicationLogs = [
+            { id: 'comm_demo_1', jobId: 'job_demo_2', dateTime: now, type: 'call', contactPerson: 'Sarah Johnson', subject: 'Cabinet delivery delay', notes: 'Cabinets delayed 1 week. Need to reschedule install.', followUpNeeded: true, followUpDate: '2026-04-20', createdBy: 'Allen Foster', createdDate: now, updatedDate: now },
+            { id: 'comm_demo_2', jobId: 'job_demo_1', dateTime: now, type: 'text', contactPerson: 'Bob Anderson', subject: 'Final walkthrough', notes: 'Client happy with work. Schedule final payment.', followUpNeeded: false, createdBy: 'Allen Foster', createdDate: now, updatedDate: now }
+        ];
+
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(defaultSettings));
-        localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify([]));
-        localStorage.setItem(STORAGE_KEYS.ESTIMATES, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs));
+        localStorage.setItem(STORAGE_KEYS.ESTIMATES, JSON.stringify(estimates));
         localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify([]));
         localStorage.setItem(STORAGE_KEYS.COST_LIBRARY, JSON.stringify([]));
         localStorage.setItem(STORAGE_KEYS.ASSEMBLIES, JSON.stringify([]));
@@ -128,11 +178,11 @@ const Storage = {
         localStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify([]));
         localStorage.setItem(STORAGE_KEYS.BRANDING, JSON.stringify({}));
         localStorage.setItem(STORAGE_KEYS.TEAM_MEMBERS, JSON.stringify([]));
-        localStorage.setItem(STORAGE_KEYS.CONTRACTS, JSON.stringify([]));
-        localStorage.setItem(STORAGE_KEYS.WARRANTIES, JSON.stringify([]));
-        localStorage.setItem(STORAGE_KEYS.PUNCH_LISTS, JSON.stringify([]));
-        localStorage.setItem(STORAGE_KEYS.MATERIAL_LISTS, JSON.stringify([]));
-        localStorage.setItem(STORAGE_KEYS.COMMUNICATION_LOGS, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.CONTRACTS, JSON.stringify(contracts));
+        localStorage.setItem(STORAGE_KEYS.WARRANTIES, JSON.stringify(warranties));
+        localStorage.setItem(STORAGE_KEYS.PUNCH_LISTS, JSON.stringify(punchLists));
+        localStorage.setItem(STORAGE_KEYS.MATERIAL_LISTS, JSON.stringify(materialLists));
+        localStorage.setItem(STORAGE_KEYS.COMMUNICATION_LOGS, JSON.stringify(communicationLogs));
         
         console.log('[Storage] Default data seeded');
     },
