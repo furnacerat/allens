@@ -21,11 +21,17 @@ const STORAGE_KEYS = {
     PUNCH_LISTS: 'allen_punch_lists',
     MATERIAL_LISTS: 'allen_material_lists',
     COMMUNICATION_LOGS: 'allen_communication_logs',
+    CALENDAR_EVENTS: 'allen_calendar_events',
+    TASKS: 'allen_tasks',
+    CREWS: 'allen_crews',
+    MILESTONES: 'allen_milestones',
+    DAILY_LOGS: 'allen_daily_logs',
+    SCHEDULE_TEMPLATES: 'allen_schedule_templates',
     INITIALIZED: 'allen_initialized',
     VERSION: 'allen_version'
 };
 
-const CURRENT_VERSION = '6.0.0';
+const CURRENT_VERSION = '7.0.0';
 
 const Storage = {
     initializeStorage() {
@@ -76,6 +82,12 @@ const Storage = {
         this.ensureKey(STORAGE_KEYS.PUNCH_LISTS, []);
         this.ensureKey(STORAGE_KEYS.MATERIAL_LISTS, []);
         this.ensureKey(STORAGE_KEYS.COMMUNICATION_LOGS, []);
+        this.ensureKey(STORAGE_KEYS.CALENDAR_EVENTS, []);
+        this.ensureKey(STORAGE_KEYS.TASKS, []);
+        this.ensureKey(STORAGE_KEYS.CREWS, []);
+        this.ensureKey(STORAGE_KEYS.MILESTONES, []);
+        this.ensureKey(STORAGE_KEYS.DAILY_LOGS, []);
+        this.ensureKey(STORAGE_KEYS.SCHEDULE_TEMPLATES, []);
         console.log('[Storage] Data validation complete');
     },
 
@@ -164,6 +176,67 @@ const Storage = {
             { id: 'comm_demo_2', jobId: 'job_demo_1', dateTime: now, type: 'text', contactPerson: 'Bob Anderson', subject: 'Final walkthrough', notes: 'Client happy with work. Schedule final payment.', followUpNeeded: false, createdBy: 'Allen Foster', createdDate: now, updatedDate: now }
         ];
 
+        // Demo Calendar Events (this week)
+        const today = new Date();
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+        const dayAfter = new Date(today); dayAfter.setDate(dayAfter.getDate() + 2);
+        const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate() + 7);
+        
+        const calendarEvents = [
+            { id: 'cal_1', jobId: 'job_demo_2', title: 'Kitchen Install', type: 'install', startDate: today.toISOString().split('T')[0], startTime: '08:00', endTime: '17:00', allDay: false, location: '456 Maple Ave', assignedTo: '', crewId: '', status: 'scheduled', notes: '', createdDate: now, updatedDate: now },
+            { id: 'cal_2', jobId: 'job_demo_3', title: 'Site Visit - Estimate', type: 'estimate_appointment', startDate: tomorrow.toISOString().split('T')[0], startTime: '10:00', endTime: '11:00', allDay: false, location: '789 Ridgeview Dr', assignedTo: '', crewId: '', status: 'confirmed', notes: 'Bring paint samples', createdDate: now, updatedDate: now },
+            { id: 'cal_3', jobId: 'job_demo_1', title: 'Final Walkthrough', type: 'final_walkthrough', startDate: dayAfter.toISOString().split('T')[0], startTime: '14:00', endTime: '15:00', allDay: false, location: '123 Oak Street', assignedTo: 'Allen Foster', crewId: '', status: 'scheduled', notes: '', createdDate: now, updatedDate: now },
+            { id: 'cal_4', jobId: 'job_demo_2', title: 'Material Delivery', type: 'material_delivery', startDate: nextWeek.toISOString().split('T')[0], startTime: '09:00', endTime: '10:00', allDay: false, location: '456 Maple Ave', assignedTo: '', crewId: '', status: 'scheduled', notes: 'Cabinets and countertops', createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Tasks
+        const tasks = [
+            { id: 'task_1', jobId: 'job_demo_2', title: 'Install base cabinets', roomArea: 'Kitchen', category: 'install', assignedTo: 'Allen', priority: 'high', status: 'in_progress', dueDate: today.toISOString().split('T')[0], estimatedHours: 6, actualHours: 0, notes: '', createdDate: now, updatedDate: now },
+            { id: 'task_2', jobId: 'job_demo_2', title: 'Install upper cabinets', roomArea: 'Kitchen', category: 'install', assignedTo: 'Allen', priority: 'high', status: 'open', dueDate: tomorrow.toISOString().split('T')[0], estimatedHours: 4, actualHours: 0, notes: '', createdDate: now, updatedDate: now },
+            { id: 'task_3', jobId: 'job_demo_2', title: 'Plumbing hookup', roomArea: 'Kitchen', category: 'plumbing', assignedTo: '', priority: 'medium', status: 'open', dueDate: dayAfter.toISOString().split('T')[0], estimatedHours: 2, actualHours: 0, notes: '', createdDate: now, updatedDate: now },
+            { id: 'task_4', jobId: 'job_demo_1', title: 'Final punch items', roomArea: 'Whole house', category: 'punch', assignedTo: 'Allen', priority: 'high', status: 'completed', dueDate: yesterday.toISOString().split('T')[0], estimatedHours: 4, actualHours: 3, notes: 'Complete', createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Crews
+        const crews = [
+            { id: 'crew_1', name: 'Allen + Helper', role: 'General', memberIds: ['member_1'], notes: '', createdDate: now, updatedDate: now },
+            { id: 'crew_2', name: 'Electrician - Mike', role: 'Electrical', memberIds: [], notes: 'Subcontractor', createdDate: now, updatedDate: now },
+            { id: 'crew_3', name: 'Plumber - Tom', role: 'Plumbing', memberIds: [], notes: 'Subcontractor', createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Milestones
+        const milestones = [
+            { id: 'mile_1', jobId: 'job_demo_2', title: 'Permit Approved', description: '', targetDate: '2026-04-01', actualDate: null, status: 'delayed', notes: 'Waiting on city', createdDate: now, updatedDate: now },
+            { id: 'mile_2', jobId: 'job_demo_2', title: 'Demo Complete', description: '', targetDate: '2026-04-10', actualDate: '2026-04-05', status: 'completed', notes: '', createdDate: now, updatedDate: now },
+            { id: 'mile_3', jobId: 'job_demo_2', title: 'Rough-in Inspection', description: '', targetDate: '2026-04-20', actualDate: null, status: 'upcoming', notes: '', createdDate: now, updatedDate: now },
+            { id: 'mile_4', jobId: 'job_demo_2', title: 'Final Walkthrough', description: '', targetDate: '2026-05-01', actualDate: null, status: 'upcoming', notes: '', createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Daily Logs
+        const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+        const dailyLogs = [
+            { id: 'log_1', jobId: 'job_demo_2', logDate: yesterday.toISOString().split('T')[0], weather: 'Sunny, 65F', crewOnSite: 'Allen', workCompleted: 'Removed old cabinets, disposed. Demo complete.', materialsDelivered: '', issues: 'Found water damage behind sink cabinet', inspections: '', customerComm: '', safetyNotes: '', nextSteps: 'Start base cabinet install tomorrow', createdBy: 'Allen Foster', createdDate: now, updatedDate: now },
+            { id: 'log_2', jobId: 'job_demo_1', logDate: yesterday.toISOString().split('T')[0], weather: 'Cloudy, 58F', crewOnSite: 'Allen', workCompleted: 'Punch list items complete. Final cleaning.', materialsDelivered: '', issues: '', inspections: '', customerComm: 'Client satisfied', safetyNotes: '', nextSteps: 'Schedule final payment', createdBy: 'Allen Foster', createdDate: now, updatedDate: now }
+        ];
+
+        // Demo Schedule Templates
+        const scheduleTemplates = [
+            { id: 'template_1', name: 'Kitchen Remodel', jobType: 'kitchen', milestones: [
+                { title: 'Permit if needed', daysOffset: -14 },
+                { title: 'Demo', daysOffset: 0 },
+                { title: 'Rough-in', daysOffset: 7 },
+                { title: 'Drywall', daysOffset: 14 },
+                { title: 'Cabinets', daysOffset: 21 },
+                { title: 'Countertops', daysOffset: 28 },
+                { title: 'Final Walkthrough', daysOffset: 35 }]
+            }, tasks: [
+                { title: 'Demo old cabinets', category: 'demolition', estimatedHours: 8 },
+                { title: 'Install base cabinets', category: 'install', estimatedHours: 6 },
+                { title: 'Install upper cabinets', category: 'install', estimatedHours: 4 },
+                { title: 'Plumbing hookup', category: 'plumbing', estimatedHours: 2 }
+            ], createdDate: now, updatedDate: now }
+        ];
+
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(defaultSettings));
         localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs));
         localStorage.setItem(STORAGE_KEYS.ESTIMATES, JSON.stringify(estimates));
@@ -183,6 +256,12 @@ const Storage = {
         localStorage.setItem(STORAGE_KEYS.PUNCH_LISTS, JSON.stringify(punchLists));
         localStorage.setItem(STORAGE_KEYS.MATERIAL_LISTS, JSON.stringify(materialLists));
         localStorage.setItem(STORAGE_KEYS.COMMUNICATION_LOGS, JSON.stringify(communicationLogs));
+        localStorage.setItem(STORAGE_KEYS.CALENDAR_EVENTS, JSON.stringify(calendarEvents));
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+        localStorage.setItem(STORAGE_KEYS.CREWS, JSON.stringify(crews));
+        localStorage.setItem(STORAGE_KEYS.MILESTONES, JSON.stringify(milestones));
+        localStorage.setItem(STORAGE_KEYS.DAILY_LOGS, JSON.stringify(dailyLogs));
+        localStorage.setItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(scheduleTemplates));
         
         console.log('[Storage] Default data seeded');
     },
@@ -434,6 +513,84 @@ const Storage = {
         catch (e) { return false; }
     },
 
+    // Calendar Events
+    getCalendarEvents() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.CALENDAR_EVENTS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveCalendarEvents(events) {
+        try { localStorage.setItem(STORAGE_KEYS.CALENDAR_EVENTS, JSON.stringify(events)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Tasks
+    getTasks() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.TASKS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveTasks(tasks) {
+        try { localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Crews
+    getCrews() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.CREWS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveCrews(crews) {
+        try { localStorage.setItem(STORAGE_KEYS.CREWS, JSON.stringify(crews)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Milestones
+    getMilestones() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.MILESTONES);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveMilestones(milestones) {
+        try { localStorage.setItem(STORAGE_KEYS.MILESTONES, JSON.stringify(milestones)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Daily Logs
+    getDailyLogs() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.DAILY_LOGS);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveDailyLogs(logs) {
+        try { localStorage.setItem(STORAGE_KEYS.DAILY_LOGS, JSON.stringify(logs)); return true; }
+        catch (e) { return false; }
+    },
+
+    // Schedule Templates
+    getScheduleTemplates() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.SCHEDULE_TEMPLATES);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
+    saveScheduleTemplates(templates) {
+        try { localStorage.setItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(templates)); return true; }
+        catch (e) { return false; }
+    },
+
     // Backup
     getBackupData() {
         try {
@@ -458,7 +615,13 @@ const Storage = {
                 warranties: this.getWarranties(),
                 punchLists: this.getPunchLists(),
                 materialLists: this.getMaterialLists(),
-                communicationLogs: this.getCommunicationLogs()
+                communicationLogs: this.getCommunicationLogs(),
+                calendarEvents: this.getCalendarEvents(),
+                tasks: this.getTasks(),
+                crews: this.getCrews(),
+                milestones: this.getMilestones(),
+                dailyLogs: this.getDailyLogs(),
+                scheduleTemplates: this.getScheduleTemplates()
             };
         } catch (e) {
             console.error('[Storage] Backup error:', e);
@@ -490,6 +653,12 @@ const Storage = {
                 if (data.punchLists) this.savePunchLists(data.punchLists);
                 if (data.materialLists) this.saveMaterialLists(data.materialLists);
                 if (data.communicationLogs) this.saveCommunicationLogs(data.communicationLogs);
+                if (data.calendarEvents) this.saveCalendarEvents(data.calendarEvents);
+                if (data.tasks) this.saveTasks(data.tasks);
+                if (data.crews) this.saveCrews(data.crews);
+                if (data.milestones) this.saveMilestones(data.milestones);
+                if (data.dailyLogs) this.saveDailyLogs(data.dailyLogs);
+                if (data.scheduleTemplates) this.saveScheduleTemplates(data.scheduleTemplates);
             }
             
             localStorage.setItem(STORAGE_KEYS.VERSION, CURRENT_VERSION);
