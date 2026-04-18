@@ -1381,5 +1381,177 @@ window.createPunchItem = createPunchItem;
 window.createMaterialList = createMaterialList;
 window.createMaterialItem = createMaterialItem;
 window.createCommunicationLog = createCommunicationLog;
+
+// Calendar Event Types
+const CALENDAR_EVENT_TYPES = [
+    { value: 'estimate_appointment', label: 'Estimate Appointment' },
+    { value: 'site_visit', label: 'Site Visit' },
+    { value: 'demo', label: 'Demolition' },
+    { value: 'framing', label: 'Framing' },
+    { value: 'drywall', label: 'Drywall' },
+    { value: 'paint', label: 'Paint' },
+    { value: 'flooring', label: 'Flooring' },
+    { value: 'install', label: 'Install' },
+    { value: 'inspection', label: 'Inspection' },
+    { value: 'material_delivery', label: 'Material Delivery' },
+    { value: 'punch_list', label: 'Punch List' },
+    { value: 'final_walkthrough', label: 'Final Walkthrough' },
+    { value: 'payment_due', label: 'Payment Due' },
+    { value: 'other', label: 'Other' }
+];
+
+const CALENDAR_EVENT_STATUSES = [
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'canceled', label: 'Canceled' }
+];
+
+// Task Priorities
+const TASK_PRIORITIES = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+    { value: 'urgent', label: 'Urgent' }
+];
+
+const TASK_STATUSES = [
+    { value: 'open', label: 'Open' },
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'blocked', label: 'Blocked' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'canceled', label: 'Canceled' }
+];
+
+// Milestone Statuses
+const MILESTONE_STATUSES = [
+    { value: 'upcoming', label: 'Upcoming' },
+    { value: 'due_soon', label: 'Due Soon' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'delayed', label: 'Delayed' },
+    { value: 'skipped', label: 'Skipped' }
+];
+
+// Job Schedule Statuses
+const JOB_SCHEDULE_STATUSES = [
+    { value: 'not_scheduled', label: 'Not Scheduled' },
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'delayed', label: 'Delayed' },
+    { value: 'on_hold', label: 'On Hold' },
+    { value: 'completed', label: 'Completed' }
+];
+
+window.CALENDAR_EVENT_TYPES = CALENDAR_EVENT_TYPES;
+window.CALENDAR_EVENT_STATUSES = CALENDAR_EVENT_STATUSES;
+window.TASK_PRIORITIES = TASK_PRIORITIES;
+window.TASK_STATUSES = TASK_STATUSES;
+window.MILESTONE_STATUSES = MILESTONE_STATUSES;
+window.JOB_SCHEDULE_STATUSES = JOB_SCHEDULE_STATUSES;
+
+// Create Calendar Event
+function createCalendarEvent(data = {}) {
+    return {
+        id: data.id || generateId(),
+        jobId: data.jobId || null,
+        title: data.title || '',
+        description: data.description || '',
+        type: data.type || 'other',
+        startDate: data.startDate || null,
+        startTime: data.startTime || '',
+        endDate: data.endDate || null,
+        endTime: data.endTime || '',
+        allDay: data.allDay || false,
+        location: data.location || '',
+        assignedTo: data.assignedTo || '',
+        crewId: data.crewId || null,
+        status: data.status || 'scheduled',
+        notes: data.notes || '',
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+// Create Task
+function createTask(data = {}) {
+    return {
+        id: data.id || generateId(),
+        jobId: data.jobId || null,
+        eventId: data.eventId || null,
+        title: data.title || '',
+        description: data.description || '',
+        roomArea: data.roomArea || '',
+        category: data.category || '',
+        assignedTo: data.assignedTo || '',
+        priority: data.priority || 'medium',
+        status: data.status || 'open',
+        dueDate: data.dueDate || null,
+        completedDate: data.completedDate || null,
+        estimatedHours: data.estimatedHours || 0,
+        actualHours: data.actualHours || 0,
+        notes: data.notes || '',
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+// Create Crew
+function createCrew(data = {}) {
+    return {
+        id: data.id || generateId(),
+        name: data.name || '',
+        role: data.role || '',
+        memberIds: data.memberIds || [],
+        notes: data.notes || '',
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+// Create Milestone
+function createMilestone(data = {}) {
+    return {
+        id: data.id || generateId(),
+        jobId: data.jobId || null,
+        title: data.title || '',
+        description: data.description || '',
+        targetDate: data.targetDate || null,
+        actualDate: data.actualDate || null,
+        status: data.status || 'upcoming',
+        notes: data.notes || '',
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+// Create Daily Log
+function createDailyLog(data = {}) {
+    return {
+        id: data.id || generateId(),
+        jobId: data.jobId || null,
+        logDate: data.logDate || now().split('T')[0],
+        weather: data.weather || '',
+        crewOnSite: data.crewOnSite || '',
+        workCompleted: data.workCompleted || '',
+        materialsDelivered: data.materialsDelivered || '',
+        issues: data.issues || '',
+        inspections: data.inspections || '',
+        customerComm: data.customerComm || '',
+        safetyNotes: data.safetyNotes || '',
+        nextSteps: data.nextSteps || '',
+        createdBy: data.createdBy || '',
+        createdDate: data.createdDate || now(),
+        updatedDate: data.updatedDate || now()
+    };
+}
+
+window.createCalendarEvent = createCalendarEvent;
+window.createTask = createTask;
+window.createCrew = createCrew;
+window.createMilestone = createMilestone;
+window.createDailyLog = createDailyLog;
+
 window.getSeedData = getSeedData;
 window.getRoomLabel = getRoomLabel;

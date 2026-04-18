@@ -90,6 +90,9 @@ const Views = {
             warranties: 'Warranties',
             punchlists: 'Punch Lists',
             materials: 'Materials',
+            schedule: 'Schedule',
+            tasks: 'Tasks',
+            crews: 'Crews',
             settings: 'Settings'
         };
 
@@ -115,11 +118,12 @@ const Views = {
             jobcosts: () => JobCostsView.render(content),
             invoices: () => InvoicesView.render(content),
             contracts: () => ContractsView.render(content),
-            warranties: () => WarrantiesView.render(content),
+warranties: () => WarrantiesView.render(content),
             punchlists: () => PunchListsView.render(content),
             materials: () => MaterialsView.render(content),
-            punchlists: () => this.renderPunchLists(content),
-            materials: () => this.renderMaterials(content),
+            schedule: () => ScheduleView.render(content),
+            tasks: () => TasksView.render(content),
+            crews: () => CrewsView.render(content),
             settings: () => this.renderSettings(content)
         };
 
