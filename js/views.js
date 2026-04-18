@@ -445,6 +445,7 @@ const Views = {
     renderSettings(container) {
         const settings = Storage.getSettings();
         const teamMembers = Storage.getTeamMembers();
+        const branding = Storage.getBranding();
 
         container.innerHTML = `
             <div class="card">
@@ -512,9 +513,29 @@ const Views = {
                         <button class="btn btn-secondary" onclick="document.getElementById('restore-input').click()">
                             <span>📤</span> Restore from Backup
                         </button>
-                        <input type="file" id="restore-input" accept=".json" style="display:none" onchange="BackupForm.restore(this)">
+<input type="file" id="restore-input" accept=".json" style="display:none" onchange="BackupForm.restore(this)">
                     </div>
                     <p class="text-muted mt-md">Back up your data regularly to protect against data loss.</p>
+                </div>
+            </div>
+
+            <div class="card mt-lg">
+                <div class="card-header">
+                    <h3 class="card-title">Branding</h3>
+                    <button class="btn btn-primary" onclick="BrandingForm.save()">Save Branding</button>
+                </div>
+                <div class="card-body">
+                    <form id="branding-form">
+                        ${BrandingForm.renderLogoUpload()}
+                        <div class="form-row">
+                            ${Forms.createInput('companyTagline', 'Tagline', 'text', branding.companyTagline || '', false, 'e.g., Quality Craftsmanship Since 1995')}
+                        </div>
+                        ${Forms.createTextarea('companyMessage', 'Company Message', branding.companyMessage || '')}
+                        <div class="form-row form-row-2">
+                            ${Forms.createInput('facebook', 'Facebook URL', 'url', branding.facebook || '')}
+                            ${Forms.createInput('instagram', 'Instagram URL', 'url', branding.instagram || '')}
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -533,43 +554,7 @@ const Views = {
                     })">Clear All Data</button>
                 </div>
             </div>
-        `;
-    }
-};
-
-// Job List
-const JobList = {
-    render(jobs, searchTerm = '') {
-        const filtered = searchTerm
-            ? jobs.filter(j =>
-                j.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                j.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                j.address.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            : jobs;
-
-        if (filtered.length === 0) {
-            return createEmptyState('📋', 'No Jobs', 'Create your first job to get started.');
-        }
-
-        return filtered.map(job => `
-            <button class="list-item" onclick="JobDetailView.render(document.getElementById('content'), '${job.id}')">
-                <div class="list-item-content">
-                    <div class="list-item-title">${job.name}</div>
-                    <div class="list-item-subtitle">${job.customerName} • ${job.address || 'No address'}</div>
-                </div>
-                <div class="list-item-meta">
-                    ${createStatusBadge(job.status, getJobStatusLabel(job.status))}
-                    <div>${getProjectTypeLabel(job.projectType)}</div>
-                </div>
-            </button>
-        `).join('');
-    },
-
-    filter(term) {
-        const jobs = Storage.getJobs();
-        const list = document.getElementById('job-list');
-        if (list) list.innerHTML = this.render(jobs, term);
+        </div>`;
     }
 };
 
@@ -2067,6 +2052,7 @@ const BackupForm = {
 };
 
 // TEAM MEMBERS
+// Team Member Form
 const TeamMemberForm = {
     open(memberId = null) {
         const members = Storage.getTeamMembers();
@@ -2116,6 +2102,63 @@ const TeamMemberForm = {
         Modal.close();
         Toast.success('Team member deleted');
         Views.navigate('settings');
+    }
+};
+
+// BRANDING FORM
+const BrandingForm = {
+    renderLogoUpload() {
+        const branding = Storage.getBranding();
+        return `
+            <div class="form-group">
+                <label>Company Logo (optional)</label>
+                <input type="file" id="branding-logo" accept="image/*" onchange="BrandingForm.previewLogo()">
+                <div id="logo-preview" class="logo-preview mt-sm">
+                    ${branding.logo ? `<img src="${branding.logo}" style="max-width:200px;max-height:80px;">` : ''}
+                </div>
+            </div>
+        `;
+    },
+    
+    previewLogo() {
+        const file = document.getElementById('branding-logo').files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('logo-preview').innerHTML = `<img src="${e.target.result}" style="max-width:200px;max-height:80px;">`;
+        };
+        reader.readAsDataURL(file);
+    },
+    
+    save() {
+        const branding = Storage.getBranding();
+        
+        // Get logo if uploaded
+        const logoInput = document.getElementById('branding-logo');
+        if (logoInput && logoInput.files.length > 0) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.doSave(e.target.result);
+            };
+            reader.readAsDataURL(logoInput.files[0]);
+        } else {
+            this.doSave(branding.logo);
+        }
+    },
+    
+    doSave(logoData) {
+        const branding = {
+            logo: logoData || '',
+            companyTagline: document.getElementById('companyTagline').value,
+            companyMessage: document.getElementById('companyMessage').value,
+            facebook: document.getElementById('facebook').value,
+            instagram: document.getElementById('instagram').value,
+            updatedAt: now()
+        };
+        
+        Storage.saveBranding(branding);
+        Toast.success('Branding saved');
     }
 };
 

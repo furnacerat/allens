@@ -2169,3 +2169,11 @@ body {
         box-shadow: none;
     }
 }
+
+/* Branding */
+.logo-preview {
+    padding: var(--space-md);
+    background: var(--background);
+    border-radius: var(--radius-md);
+    min-height: 60px;
+}
