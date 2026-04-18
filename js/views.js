@@ -553,7 +553,7 @@ const JobList = {
         }
 
         return filtered.map(job => `
-            <button class="list-item" onclick="JobForm.open('${job.id}')">
+            <button class="list-item" onclick="JobDetailView.render(document.getElementById('content'), '${job.id}')">
                 <div class="list-item-content">
                     <div class="list-item-title">${job.name}</div>
                     <div class="list-item-subtitle">${job.customerName} • ${job.address || 'No address'}</div>
@@ -3954,3 +3954,365 @@ const MaterialsView = {
 };
 
 window.MaterialsView = MaterialsView;
+
+// ==========================================
+// COMMUNICATION LOG VIEW
+// ==========================================
+const CommunicationLogView = {
+    renderForJob(container, jobId) {
+        const logs = Storage.getCommunicationLogs().filter(l => l.jobId === jobId).sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+        
+        let html = `
+            <div class="comm-log-list">
+                <button class="btn btn-primary btn-sm" onclick="CommunicationLogView.addLog('${jobId}')">+ Add Note</button>
+        `;
+        
+        if (logs.length === 0) {
+            html += '<p class="text-muted mt-md">No communications logged.</p>';
+        } else {
+            logs.forEach(log => {
+                const followUpBadge = log.followUpNeeded ? '<span class="badge badge-warning">Follow-up</span>' : '';
+                html += `
+                    <div class="comm-log-item" onclick="CommunicationLogView.editLog('${log.id}')">
+                        <div class="comm-log-header">
+                            <span class="comm-log-type">${log.type}</span>
+                            <span class="comm-log-date">${formatDateTime(log.dateTime)}</span>
+                            ${followUpBadge}
+                        </div>
+                        <p class="comm-log-subject">${log.subject}</p>
+                        <p class="comm-log-contact">${log.contactPerson}</p>
+                        <p class="comm-log-notes">${log.notes.substring(0, 100)}${log.notes.length > 100 ? '...' : ''}</p>
+                    </div>
+                `;
+            });
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+    
+    addLog(jobId) {
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Add Communication';
+        content.innerHTML = `
+            <form id="commlog-form" class="form">
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="commlog-type">
+                        ${COMMUNICATION_TYPES.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contact Person</label>
+                    <input type="text" id="commlog-contact" required>
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" id="commlog-subject" required>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="commlog-notes" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="commlog-followup"> Follow-up needed</label>
+                </div>
+                <div class="form-group">
+                    <label>Follow-up Date</label>
+                    <input type="date" id="commlog-followup-date">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('commlog-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveLog(jobId);
+        });
+    },
+    
+    saveLog(jobId) {
+        const logs = Storage.getCommunicationLogs();
+        
+        logs.push(createCommunicationLog({
+            jobId: jobId,
+            type: document.getElementById('commlog-type').value,
+            contactPerson: document.getElementById('commlog-contact').value,
+            subject: document.getElementById('commlog-subject').value,
+            notes: document.getElementById('commlog-notes').value,
+            followUpNeeded: document.getElementById('commlog-followup').checked,
+            followUpDate: document.getElementById('commlog-followup-date').value || null
+        }));
+        
+        Storage.saveCommunicationLogs(logs);
+        Modal.close();
+        Toast.success('Communication logged');
+        
+        // Refresh job detail if open
+        if (window.currentJobDetailId) {
+            const content = document.getElementById('content');
+            JobDetailView.render(content, window.currentJobDetailId);
+        }
+    },
+    
+    editLog(logId) {
+        const log = Storage.getCommunicationLogs().find(l => l.id === logId);
+        if (!log) return;
+        
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const content = document.getElementById('modal-content');
+        
+        title.textContent = 'Edit Communication';
+        content.innerHTML = `
+            <form id="commlog-edit-form" class="form">
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="edit-commlog-type">
+                        ${COMMUNICATION_TYPES.map(t => `<option value="${t.value}" ${t.value === log.type ? 'selected' : ''}>${t.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contact Person</label>
+                    <input type="text" id="edit-commlog-contact" value="${log.contactPerson}">
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" id="edit-commlog-subject" value="${log.subject}">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="edit-commlog-notes" rows="4">${log.notes || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="edit-commlog-followup" ${log.followUpNeeded ? 'checked' : ''}> Follow-up needed</label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" onclick="CommunicationLogView.deleteLog('${logId}')">Delete</button>
+                    <button type="button" class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        `;
+        
+        modal.classList.remove('hidden');
+        
+        document.getElementById('commlog-edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateLog(logId);
+        });
+    },
+    
+    updateLog(logId) {
+        const logs = Storage.getCommunicationLogs();
+        const log = logs.find(l => l.id === logId);
+        if (!log) return;
+        
+        log.type = document.getElementById('edit-commlog-type').value;
+        log.contactPerson = document.getElementById('edit-commlog-contact').value;
+        log.subject = document.getElementById('edit-commlog-subject').value;
+        log.notes = document.getElementById('edit-commlog-notes').value;
+        log.followUpNeeded = document.getElementById('edit-commlog-followup').checked;
+        log.updatedDate = now();
+        
+        Storage.saveCommunicationLogs(logs);
+        Modal.close();
+        Toast.success('Communication updated');
+        
+        if (window.currentJobDetailId) {
+            const content = document.getElementById('content');
+            JobDetailView.render(content, window.currentJobDetailId);
+        }
+    },
+    
+    deleteLog(logId) {
+        if (!confirm('Delete this communication?')) return;
+        
+        const logs = Storage.getCommunicationLogs();
+        const filtered = logs.filter(l => l.id !== logId);
+        Storage.saveCommunicationLogs(filtered);
+        
+        Modal.close();
+        Toast.success('Communication deleted');
+        
+        if (window.currentJobDetailId) {
+            const content = document.getElementById('content');
+            JobDetailView.render(content, window.currentJobDetailId);
+        }
+    }
+};
+
+window.CommunicationLogView = CommunicationLogView;
+
+// ==========================================
+// JOB DETAIL VIEW
+// ==========================================
+const JobDetailView = {
+    render(container, jobId) {
+        window.currentJobDetailId = jobId;
+        
+        const job = Storage.getJobs().find(j => j.id === jobId);
+        if (!job) {
+            container.innerHTML = '<p>Job not found.</p>';
+            return;
+        }
+        
+        const estimates = Storage.getEstimates().filter(e => e.jobId === jobId);
+        const contracts = Storage.getContracts().filter(c => c.jobId === jobId);
+        const invoices = Storage.getInvoices().filter(i => i.jobId === jobId);
+        const warranties = Storage.getWarranties().filter(w => w.jobId === jobId);
+        const punchLists = Storage.getPunchLists().filter(p => p.jobId === jobId);
+        const materialLists = Storage.getMaterialLists().filter(m => m.jobId === jobId);
+        const commLogs = Storage.getCommunicationLogs().filter(l => l.jobId === jobId);
+        const photoNotes = Storage.getPhotoNotes().filter(p => p.jobId === jobId);
+        
+        const activeWarranties = warranties.filter(w => w.status === 'active').length;
+        const expiringWarranties = warranties.filter(w => {
+            if (w.status !== 'active' || !w.endDate) return false;
+            const days = Math.ceil((new Date(w.endDate) - new Date()) / (1000 * 60 * 60 * 24));
+            return days <= 30 && days > 0;
+        }).length;
+        
+        container.innerHTML = `
+            <div class="job-detail">
+                <div class="job-header">
+                    <div>
+                        <h2>${job.name}</h2>
+                        <p class="text-muted">${job.customerName} | ${job.phone}</p>
+                        <p class="text-muted">${job.address}</p>
+                    </div>
+                    <span class="badge badge-${job.status === 'completed' ? 'success' : job.status === 'in_progress' ? 'warning' : 'muted'}">${job.status}</span>
+                </div>
+                
+                <div class="doc-center">
+                    <h3>📁 Project Documents</h3>
+                    
+                    <div class="doc-grid">
+                        <div class="doc-card" onclick="Views.navigate('estimates'); setTimeout(() => Views.render('estimates', {jobId:'${job.id}'}), 100)">
+                            <span class="doc-icon">📐</span>
+                            <span class="doc-label">Estimates</span>
+                            <span class="doc-count">${estimates.length}</span>
+                        </div>
+                        
+                        <div class="doc-card" onclick="ContractsView.createNew('${job.id}')">
+                            <span class="doc-icon">📜</span>
+                            <span class="doc-label">Contracts</span>
+                            <span class="doc-count">${contracts.length}</span>
+                        </div>
+                        
+                        <div class="doc-card" onclick="InvoicesView.render(document.getElementById('content'))">
+                            <span class="doc-icon">📄</span>
+                            <span class="doc-label">Invoices</span>
+                            <span class="doc-count">${invoices.length}</span>
+                        </div>
+                        
+                        <div class="doc-card" onclick="WarrantiesView.createNew('${job.id}')">
+                            <span class="doc-icon">🛡</span>
+                            <span class="doc-label">Warranties</span>
+                            <span class="doc-count">${activeWarranties} active</span>
+                            ${expiringWarranties > 0 ? `<span class="badge badge-warning" style="margin-left:4px">${expiringWarranties} expiring</span>` : ''}
+                        </div>
+                        
+                        <div class="doc-card" onclick="PunchListsView.createNew('${job.id}')">
+                            <span class="doc-icon">✓</span>
+                            <span class="doc-label">Punch Lists</span>
+                            <span class="doc-count">${punchLists.length}</span>
+                        </div>
+                        
+                        <div class="doc-card" onclick="MaterialsView.createNew('${job.id}')">
+                            <span class="doc-icon">🛒</span>
+                            <span class="doc-label">Materials</span>
+                            <span class="doc-count">${materialLists.length}</span>
+                        </div>
+                        
+                        <div class="doc-card" onclick="CommunicationLogView.renderForJob(document.getElementById('comm-log-container'), '${job.id}')">
+                            <span class="doc-icon">📞</span>
+                            <span class="doc-label">Comm Log</span>
+                            <span class="doc-count">${commLogs.length}</span>
+                        </div>
+                        
+                        <div class="doc-card" onclick="PhotoNotesView.render(document.getElementById('content'))">
+                            <span class="doc-icon">📷</span>
+                            <span class="doc-label">Photos</span>
+                            <span class="doc-count">${photoNotes.length}</span>
+                        </div>
+                    </div>
+                    
+                    <div id="comm-log-container" class="comm-log-section mt-md" style="display:none"></div>
+                </div>
+                
+                <div class="job-closeout mt-lg">
+                    <h3>📋 Job Closeout</h3>
+                    ${this.renderCloseoutChecklist(job, estimates, contracts, invoices, punchLists, warranties)}
+                </div>
+                
+                <div class="job-actions mt-lg">
+                    <button class="btn btn-primary" onclick="JobForm.open('${job.id}')">Edit Job</button>
+                    ${job.status !== 'completed' ? `<button class="btn btn-success" onclick="JobDetailView.completeJob('${job.id}')">Mark Complete</button>` : ''}
+                </div>
+            </div>
+        `;
+    },
+    
+    renderCloseoutChecklist(job, estimates, contracts, invoices, punchLists, warranties) {
+        const estimateApproved = estimates.some(e => e.status === 'approved');
+        const signedContract = contracts.some(c => c.status === 'signed');
+        const paidInvoices = invoices.filter(i => i.status === 'paid');
+        const allInvoicesPaid = invoices.length === 0 || paidInvoices.length === invoices.length;
+        const punchItems = punchLists.reduce((sum, pl) => sum + (pl.items ? pl.items.filter(i => i.status !== 'completed').length : 0), 0);
+        const warrantiesRecorded = warranties.length > 0;
+        
+        const items = [
+            { label: 'Estimate Approved', done: estimateApproved },
+            { label: 'Contract Signed', done: signedContract },
+            { label: 'Invoices Paid', done: allInvoicesPaid },
+            { label: 'Punch List Complete', done: punchItems === 0 },
+            { label: 'Warranty Recorded', done: warrantiesRecorded }
+        ];
+        
+        const completed = items.filter(i => i.done).length;
+        
+        return `
+            <div class="closeout-progress mb-md">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width:${(completed/items.length)*100}%"></div>
+                </div>
+                <p>${completed}/${items.length} complete</p>
+            </div>
+            <div class="closeout-checklist">
+                ${items.map((item, idx) => `
+                    <div class="closeout-item ${item.done ? 'done' : ''}">
+                        <input type="checkbox" ${item.done ? 'checked' : ''} disabled>
+                        <span>${item.label}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+    
+    completeJob(jobId) {
+        if (!confirm('Mark this job as completed? This will close the project.')) return;
+        
+        const jobs = Storage.getJobs();
+        const job = jobs.find(j => j.id === jobId);
+        if (!job) return;
+        
+        job.status = 'completed';
+        job.updatedAt = now();
+        
+        Storage.saveJobs(jobs);
+        
+        Toast.success('Job marked as completed');
+        Views.navigate('jobs');
+    }
+};
+
+window.JobDetailView = JobDetailView;
