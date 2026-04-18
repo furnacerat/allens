@@ -138,18 +138,27 @@ warranties: () => WarrantiesView.render(content),
         const jobs = Storage.getJobs();
         const estimates = Storage.getEstimates();
         const settings = Storage.getSettings();
-
+        const tasks = Storage.getTasks();
+        const events = Storage.getCalendarEvents();
+        
+        const today = new Date().toISOString().split('T')[0];
+        
         const totalJobs = jobs.length;
         const totalEstimates = estimates.length;
         const drafts = estimates.filter(e => e.status === 'draft').length;
         const approved = estimates.filter(e => e.status === 'approved').length;
-
+        
         let totalValue = 0;
         estimates.forEach(est => {
             const calc = calculateEstimate(est, settings);
             totalValue += calc.grandTotal;
         });
-
+        
+        // Today's items
+        const todayTasks = tasks.filter(t => t.dueDate === today && t.status !== 'completed');
+        const todayEvents = events.filter(e => e.startDate === today);
+        const overdueTasks = tasks.filter(t => t.dueDate && t.dueDate < today && t.status !== 'completed');
+        
         const recentEstimates = estimates
             .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
             .slice(0, 5);
@@ -159,6 +168,54 @@ warranties: () => WarrantiesView.render(content),
                 <div class="status-indicator">
                     <span class="status-dot"></span>
                     <span>Saved locally</span>
+                </div>
+            </div>
+
+            <!-- Today's Overview -->
+            <div class="card today-overview mb-lg">
+                <div class="card-header">
+                    <h3 class="card-title">Today</h3>
+                    <button class="btn btn-sm btn-primary" onclick="Views.navigate('schedule')">Full Schedule</button>
+                </div>
+                <div class="card-body">
+                    <div class="overview-stats">
+                        <div class="overview-stat">
+                            <div class="overview-value">${todayEvents.length}</div>
+                            <div class="overview-label">Events</div>
+                        </div>
+                        <div class="overview-stat">
+                            <div class="overview-value">${todayTasks.length}</div>
+                            <div class="overview-label">Tasks Due</div>
+                        </div>
+                        <div class="overview-stat danger">
+                            <div class="overview-value">${overdueTasks.length}</div>
+                            <div class="overview-label">Overdue</div>
+                        </div>
+                    </div>
+                    
+                    ${todayEvents.length > 0 ? `
+                        <div class="overview-section">
+                            <h4>Schedule</h4>
+                            ${todayEvents.slice(0, 3).map(ev => `
+                                <div class="overview-item">
+                                    <span class="overview-time">${ev.startTime || ''}</span>
+                                    <span>${ev.title}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    ${todayTasks.length > 0 ? `
+                        <div class="overview-section">
+                            <h4>Tasks</h4>
+                            ${todayTasks.slice(0, 3).map(t => `
+                                <div class="overview-item">
+                                    <input type="checkbox" onchange="TasksView.toggleComplete('${t.id}')">
+                                    <span>${t.title}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
 
@@ -4363,3 +4420,577 @@ const JobDetailView = {
 };
 
 window.JobDetailView = JobDetailView;
+
+// ==========================================
+// SCHEDULE VIEW
+// ==========================================
+const ScheduleView = {
+    render(container) {
+        const events = Storage.getCalendarEvents();
+        const jobs = Storage.getJobs();
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Sort by date
+        const sorted = events.sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+        
+        // Group by date
+        const grouped = {};
+        sorted.forEach(ev => {
+            const date = ev.startDate || 'unscheduled';
+            if (!grouped[date]) grouped[date] = [];
+            grouped[date].push(ev);
+        });
+        
+        let html = `
+            <div class="view-header">
+                <button class="btn btn-primary" onclick="ScheduleView.createNew()">
+                    <span>+ Add Event</span>
+                </button>
+            </div>
+        `;
+        
+        // Today's events highlight
+        const todayEvents = grouped[today] || [];
+        if (todayEvents.length > 0) {
+            html += `
+                <div class="card today-card mb-md">
+                    <div class="card-header">
+                        <h3 class="card-title">Today</h3>
+                    </div>
+                    <div class="card-body">
+                        ${this.renderEventList(todayEvents, jobs)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // All events
+        html += '<div class="card-list">';
+        
+        if (sorted.length === 0) {
+            html += `
+                <div class="empty-state">
+                    <p>No scheduled events.</p>
+                    <p class="text-muted">Add events to track your schedule.</p>
+                </div>
+            `;
+        } else {
+            for (const date in grouped) {
+                if (date === today) continue;
+                const isPast = date < today;
+                html += `
+                    <div class="card ${isPast ? 'past' : ''}" onclick="ScheduleView.viewEventList('${date}')">
+                        <div class="card-header">
+                            <span class="date-header">${date === 'unscheduled' ? 'Unscheduled' : this.formatDateHeader(date)}</span>
+                            <span class="badge">${grouped[date].length}</span>
+                        </div>
+                        <div class="card-body">
+                            ${this.renderEventList(grouped[date].slice(0, 3), jobs)}
+                            ${grouped[date].length > 3 ? `<p class="text-muted">+${grouped[date].length - 3} more...</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+    
+    renderEventList(events, jobs) {
+        return events.map(ev => {
+            const job = jobs.find(j => j.id === ev.jobId);
+            const statusClass = ev.status === 'completed' ? 'done' : ev.status === 'canceled' ? 'canceled' : '';
+            return `
+                <div class="schedule-event ${statusClass}" onclick="event.stopPropagation(); ScheduleView.editEvent('${ev.id}')">
+                    <div class="event-time">${ev.startTime || 'All day'}</div>
+                    <div class="event-content">
+                        <p class="event-title">${ev.title}</p>
+                        <p class="event-meta">${ev.type.replace('_', ' ')} ${job ? '| ' + job.name : ''} ${ev.location ? '| ' + ev.location : ''}</p>
+                    </div>
+                    <span class="badge badge-${ev.status === 'completed' ? 'success' : ev.status === 'canceled' ? 'muted' : 'warning'}">${ev.status}</span>
+                </div>
+            `;
+        }).join('');
+    },
+    
+    formatDateHeader(dateStr) {
+        const date = new Date(dateStr);
+        const today = new Date();
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        if (dateStr === today.toISOString().split('T')[0]) return 'Today';
+        if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Tomorrow';
+        
+        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    },
+    
+    createNew() {
+        const jobs = Storage.getJobs();
+        
+        Modal.open('New Event', `
+            <form id="event-form" class="form">
+                <div class="form-group">
+                    <label>Job (optional)</label>
+                    <select id="event-job-id">
+                        <option value="">No job linked</option>
+                        ${jobs.map(j => `<option value="${j.id}">${j.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="event-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="event-type">
+                        ${CALENDAR_EVENT_TYPES.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="event-date" value="${today()}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="time" id="event-time" value="08:00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="event-location">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="event-notes"></textarea>
+                </div>
+            </form>
+        `, `
+            <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+            <button class="btn btn-primary" onclick="ScheduleView.saveEvent()">Create</button>
+        `);
+    },
+    
+    saveEvent() {
+        const events = Storage.getCalendarEvents();
+        
+        events.push(createCalendarEvent({
+            jobId: document.getElementById('event-job-id').value || null,
+            title: document.getElementById('event-title').value,
+            type: document.getElementById('event-type').value,
+            startDate: document.getElementById('event-date').value,
+            startTime: document.getElementById('event-time').value,
+            location: document.getElementById('event-location').value,
+            notes: document.getElementById('event-notes').value
+        }));
+        
+        Storage.saveCalendarEvents(events);
+        Modal.close();
+        Toast.success('Event created');
+        Views.render('schedule');
+    },
+    
+    editEvent(eventId) {
+        const event = Storage.getCalendarEvents().find(e => e.id === eventId);
+        if (!event) return;
+        
+        const jobs = Storage.getJobs();
+        
+        Modal.open('Edit Event', `
+            <form id="event-edit-form" class="form">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="edit-event-title" value="${event.title}">
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="edit-event-type">
+                        ${CALENDAR_EVENT_TYPES.map(t => `<option value="${t.value}" ${t.value === event.type ? 'selected' : ''}>${t.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="edit-event-date" value="${event.startDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="time" id="edit-event-time" value="${event.startTime || ''}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="edit-event-status">
+                        ${CALENDAR_EVENT_STATUSES.map(s => `<option value="${s.value}" ${s.value === event.status ? 'selected' : ''}>${s.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="edit-event-location" value="${event.location || ''}">
+                </div>
+            </form>
+        `, `
+            <button class="btn btn-danger" onclick="ScheduleView.deleteEvent('${event.id}')">Delete</button>
+            <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+            <button class="btn btn-primary" onclick="ScheduleView.updateEvent('${event.id}')">Save</button>
+        `);
+    },
+    
+    updateEvent(eventId) {
+        const events = Storage.getCalendarEvents();
+        const event = events.find(e => e.id === eventId);
+        if (!event) return;
+        
+        event.title = document.getElementById('edit-event-title').value;
+        event.type = document.getElementById('edit-event-type').value;
+        event.startDate = document.getElementById('edit-event-date').value || null;
+        event.startTime = document.getElementById('edit-event-time').value;
+        event.status = document.getElementById('edit-event-status').value;
+        event.location = document.getElementById('edit-event-location').value;
+        event.updatedDate = now();
+        
+        Storage.saveCalendarEvents(events);
+        Modal.close();
+        Toast.success('Event updated');
+        Views.render('schedule');
+    },
+    
+    deleteEvent(eventId) {
+        if (!confirm('Delete this event?')) return;
+        
+        const events = Storage.getCalendarEvents().filter(e => e.id !== eventId);
+        Storage.saveCalendarEvents(events);
+        
+        Modal.close();
+        Toast.success('Event deleted');
+        Views.render('schedule');
+    },
+    
+    viewEventList(date) {
+        // Could expand to show full day's events
+    }
+};
+
+window.ScheduleView = ScheduleView;
+
+// ==========================================
+// TASKS VIEW
+// ==========================================
+const TasksView = {
+    render(container) {
+        const tasks = Storage.getTasks();
+        const jobs = Storage.getJobs();
+        
+        // Sort by due date then priority
+        const sorted = tasks.sort((a, b) => {
+            if (a.dueDate !== b.dueDate) return (a.dueDate || '').localeCompare(b.dueDate || '');
+            const priOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+            return (priOrder[a.priority] || 2) - (priOrder[b.priority] || 2);
+        });
+        
+        // Group by status
+        const openTasks = sorted.filter(t => t.status === 'open' || t.status === 'in_progress');
+        const completedTasks = sorted.filter(t => t.status === 'completed');
+        
+        container.innerHTML = `
+            <div class="view-header">
+                <button class="btn btn-primary" onclick="TasksView.createNew()">
+                    <span>+ Add Task</span>
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Open (${openTasks.length})</h3>
+                </div>
+                <div class="card-body">
+                    ${openTasks.length === 0 ? '<p class="text-muted">No open tasks.</p>' : 
+                    openTasks.map(task => this.renderTaskItem(task, jobs)).join('')}
+                </div>
+            </div>
+            
+            <div class="card mt-lg">
+                <div class="card-header">
+                    <h3 class="card-title">Completed (${completedTasks.length})</h3>
+                </div>
+                <div class="card-body">
+                    ${completedTasks.length === 0 ? '<p class="text-muted">No completed tasks.</p>' : 
+                    completedTasks.slice(0, 10).map(task => this.renderTaskItem(task, jobs)).join('')}
+                </div>
+            </div>
+        `;
+    },
+    
+    renderTaskItem(task, jobs) {
+        const job = jobs.find(j => j.id === task.jobId);
+        const priClass = task.priority === 'urgent' ? 'prio-urgent' : task.priority === 'high' ? 'prio-high' : '';
+        
+        return `
+            <div class="task-item ${task.status}" onclick="TasksView.editTask('${task.id}')">
+                <div class="task-check">
+                    <input type="checkbox" ${task.status === 'completed' ? 'checked' : ''} 
+                           onchange="event.stopPropagation(); TasksView.toggleComplete('${task.id}')">
+                </div>
+                <div class="task-content">
+                    <p class="task-title ${task.status === 'completed' ? 'done' : ''}">${task.title}</p>
+                    <p class="task-meta">${task.dueDate ? 'Due: ' + formatDate(task.dueDate) : ''} ${job ? ' | ' + job.name : ''} ${task.roomArea ? ' | ' + task.roomArea : ''}</p>
+                </div>
+                <span class="badge ${task.priority === 'urgent' ? 'badge-danger' : task.priority === 'high' ? 'badge-warning' : 'badge-muted'}">${task.priority}</span>
+            </div>
+        `;
+    },
+    
+    createNew() {
+        const jobs = Storage.getJobs();
+        
+        Modal.open('New Task', `
+            <form id="task-form" class="form">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="task-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Job</label>
+                    <select id="task-job-id">
+                        <option value="">No job</option>
+                        ${jobs.map(j => `<option value="${j.id}">${j.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" id="task-due-date">
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="task-priority">
+                            ${TASK_PRIORITIES.map(p => `<option value="${p.value}">${p.label}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Room/Area</label>
+                    <input type="text" id="task-room">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="task-notes"></textarea>
+                </div>
+            </form>
+        `, `
+            <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+            <button class="btn btn-primary" onclick="TasksView.saveTask()">Create</button>
+        `);
+    },
+    
+    saveTask() {
+        const tasks = Storage.getTasks();
+        
+        tasks.push(createTask({
+            jobId: document.getElementById('task-job-id').value || null,
+            title: document.getElementById('task-title').value,
+            dueDate: document.getElementById('task-due-date').value || null,
+            priority: document.getElementById('task-priority').value,
+            roomArea: document.getElementById('task-room').value,
+            notes: document.getElementById('task-notes').value
+        }));
+        
+        Storage.saveTasks(tasks);
+        Modal.close();
+        Toast.success('Task created');
+        Views.render('tasks');
+    },
+    
+    editTask(taskId) {
+        const task = Storage.getTasks().find(t => t.id === taskId);
+        if (!task) return;
+        
+        Modal.open('Edit Task', `
+            <form id="task-edit-form" class="form">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="edit-task-title" value="${task.title}">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="edit-task-status">
+                        ${TASK_STATUSES.map(s => `<option value="${s.value}" ${s.value === task.status ? 'selected' : ''}>${s.label}</option>`).join('')}
+                    </select>
+                </div>
+            </form>
+        `, `
+            <button class="btn btn-danger" onclick="TasksView.deleteTask('${task.id}')">Delete</button>
+            <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+            <button class="btn btn-primary" onclick="TasksView.updateTask('${task.id}')">Save</button>
+        `);
+    },
+    
+    updateTask(taskId) {
+        const tasks = Storage.getTasks();
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+        
+        task.title = document.getElementById('edit-task-title').value;
+        task.status = document.getElementById('edit-task-status').value;
+        if (task.status === 'completed') task.completedDate = now();
+        task.updatedDate = now();
+        
+        Storage.saveTasks(tasks);
+        Modal.close();
+        Toast.success('Task updated');
+        Views.render('tasks');
+    },
+    
+    toggleComplete(taskId) {
+        const tasks = Storage.getTasks();
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+        
+        task.status = task.status === 'completed' ? 'open' : 'completed';
+        if (task.status === 'completed') task.completedDate = now();
+        task.updatedDate = now();
+        
+        Storage.saveTasks(tasks);
+        Views.render('tasks');
+    },
+    
+    deleteTask(taskId) {
+        if (!confirm('Delete this task?')) return;
+        
+        const tasks = Storage.getTasks().filter(t => t.id !== taskId);
+        Storage.saveTasks(tasks);
+        
+        Modal.close();
+        Toast.success('Task deleted');
+        Views.render('tasks');
+    }
+};
+
+window.TasksView = TasksView;
+
+// ==========================================
+// CREWS VIEW
+// ==========================================
+const CrewsView = {
+    render(container) {
+        const crews = Storage.getCrews();
+        
+        container.innerHTML = `
+            <div class="view-header">
+                <button class="btn btn-primary" onclick="CrewsView.createNew()">
+                    <span>+ Add Crew</span>
+                </button>
+            </div>
+            <div class="card-list">
+        `;
+        
+        if (crews.length === 0) {
+            container.innerHTML += `
+                <div class="empty-state">
+                    <p>No crews yet.</p>
+                    <p class="text-muted">Create crews to assign to jobs and events.</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML += crews.map(crew => `
+                <div class="card" onclick="CrewsView.editCrew('${crew.id}')">
+                    <div class="card-body">
+                        <h3 class="card-title">${crew.name}</h3>
+                        <p class="card-meta">${crew.role || 'General'}</p>
+                        <p class="text-muted">${crew.memberIds?.length || 0} members</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        container.innerHTML += '</div>';
+    },
+    
+    createNew() {
+        Modal.open('New Crew', `
+            <form id="crew-form" class="form">
+                <div class="form-group">
+                    <label>Crew Name</label>
+                    <input type="text" id="crew-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Role/Trade</label>
+                    <input type="text" id="crew-role">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="crew-notes"></textarea>
+                </div>
+            </form>
+        `, `
+            <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+            <button class="btn btn-primary" onclick="CrewsView.saveCrew()">Create</button>
+        `);
+    },
+    
+    saveCrew() {
+        const crews = Storage.getCrews();
+        
+        crews.push(createCrew({
+            name: document.getElementById('crew-name').value,
+            role: document.getElementById('crew-role').value,
+            notes: document.getElementById('crew-notes').value
+        }));
+        
+        Storage.saveCrews(crews);
+        Modal.close();
+        Toast.success('Crew created');
+        Views.render('crews');
+    },
+    
+    editCrew(crewId) {
+        const crew = Storage.getCrews().find(c => c.id === crewId);
+        if (!crew) return;
+        
+        Modal.open('Edit Crew', `
+            <form id="crew-edit-form" class="form">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="edit-crew-name" value="${crew.name}">
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <input type="text" id="edit-crew-role" value="${crew.role || ''}">
+                </div>
+            </form>
+        `, `
+            <button class="btn btn-danger" onclick="CrewsView.deleteCrew('${crew.id}')">Delete</button>
+            <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+            <button class="btn btn-primary" onclick="CrewsView.updateCrew('${crew.id}')">Save</button>
+        `);
+    },
+    
+    updateCrew(crewId) {
+        const crews = Storage.getCrews();
+        const crew = crews.find(c => c.id === crewId);
+        if (!crew) return;
+        
+        crew.name = document.getElementById('edit-crew-name').value;
+        crew.role = document.getElementById('edit-crew-role').value;
+        crew.updatedDate = now();
+        
+        Storage.saveCrews(crews);
+        Modal.close();
+        Toast.success('Crew updated');
+        Views.render('crews');
+    },
+    
+    deleteCrew(crewId) {
+        if (!confirm('Delete this crew?')) return;
+        
+        const crews = Storage.getCrews().filter(c => c.id !== crewId);
+        Storage.saveCrews(crews);
+        
+        Modal.close();
+        Toast.success('Crew deleted');
+        Views.render('crews');
+    }
+};
+
+window.CrewsView = CrewsView;
