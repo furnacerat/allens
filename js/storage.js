@@ -241,12 +241,165 @@ const Storage = {
             { id: 'template_1', name: 'Kitchen Remodel', jobType: 'kitchen', milestones: kitchenRemodelMilestones, tasks: kitchenRemodelTasks, createdDate: now, updatedDate: now }
         ];
 
+        // === STARTER ASSEMBLIES ===
+        // 1. Bathroom Demo Package
+        const bathroomDemoItems = [
+            { id: generateId(), name: 'Protect work area', category: 'Demolition', quantity: 1, unit: 'room', materialCost: 25, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Demo vanity', category: 'Demolition', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 2, laborRate: 45, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Demo toilet', category: 'Demolition', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Demo tub/shower', category: 'Demolition', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 3, laborRate: 45, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Remove flooring', category: 'Demolition', quantity: 40, unit: 'sq ft', materialCost: 0, laborHours: 1.5, laborRate: 45, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Haul debris', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 150, laborHours: 2, laborRate: 45, markupPercent: 20, sortOrder: 6 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'room', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 7 }
+        ];
+
+        // 2. Kitchen Demo Package
+        const kitchenDemoItems = [
+            { id: generateId(), name: 'Demo cabinets', category: 'Demolition', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 4, laborRate: 45, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Demo countertops', category: 'Demolition', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 2, laborRate: 45, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Demo backsplash', category: 'Demolition', quantity: 30, unit: 'sq ft', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Remove sink', category: 'Plumbing', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 1, laborRate: 65, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Remove flooring', category: 'Demolition', quantity: 200, unit: 'sq ft', materialCost: 0, laborHours: 3, laborRate: 45, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Haul debris', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 250, laborHours: 3, laborRate: 45, markupPercent: 20, sortOrder: 6 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'room', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 7 }
+        ];
+
+        // 3. LVP Flooring Install Package
+        const lvpFlooringItems = [
+            { id: generateId(), name: 'Surface prep', category: 'Flooring', quantity: 1, unit: 'room', materialCost: 0, laborHours: 2, laborRate: 45, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Flooring material allowance', category: 'Flooring', quantity: 200, unit: 'sq ft', materialCost: 4, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Underlayment', category: 'Flooring', quantity: 200, unit: 'sq ft', materialCost: 0.75, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Install flooring', category: 'Flooring', quantity: 200, unit: 'sq ft', materialCost: 0, laborHours: 4, laborRate: 45, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Transitions', category: 'Flooring', quantity: 2, unit: 'ea', materialCost: 35, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Waste factor (10%)', category: 'Flooring', quantity: 20, unit: 'sq ft', materialCost: 4, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 6 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'room', materialCost: 0, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 7 }
+        ];
+
+        // 4. Paint Room Package
+        const paintRoomItems = [
+            { id: generateId(), name: 'Minor wall patch', category: 'Drywall', quantity: 1, unit: 'room', materialCost: 15, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Prep/masking', category: 'Paint', quantity: 1, unit: 'room', materialCost: 25, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Paint walls (2 coats)', category: 'Paint', quantity: 400, unit: 'sq ft', materialCost: 0.35, laborHours: 3, laborRate: 45, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Paint ceiling (optional)', category: 'Paint', quantity: 100, unit: 'sq ft', materialCost: 0.40, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Paint trim (optional)', category: 'Paint', quantity: 30, unit: 'linear ft', materialCost: 0.25, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'room', materialCost: 0, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 6 }
+        ];
+
+        // 5. Drywall Patch Repair Package
+        const drywallPatchItems = [
+            { id: generateId(), name: 'Cut damaged area', category: 'Drywall', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Install patch', category: 'Drywall', quantity: 1, unit: 'lot', materialCost: 25, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Tape/mud', category: 'Drywall', quantity: 1, unit: 'lot', materialCost: 15, laborHours: 1.5, laborRate: 45, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Sand/finish', category: 'Drywall', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Texture match', category: 'Drywall', quantity: 1, unit: 'lot', materialCost: 20, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Prime', category: 'Paint', quantity: 1, unit: 'lot', materialCost: 25, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 6 },
+            { id: generateId(), name: 'Cleanup', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 7 }
+        ];
+
+        // 6. Standard Cabinet Install Package
+        const cabinetInstallItems = [
+            { id: generateId(), name: 'Install base cabinets', category: 'Cabinets', quantity: 10, unit: 'linear ft', materialCost: 0, laborHours: 2, laborRate: 55, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Install wall cabinets', category: 'Cabinets', quantity: 8, unit: 'linear ft', materialCost: 0, laborHours: 1.5, laborRate: 55, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Hardware install', category: 'Cabinets', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Adjustments/shimming', category: 'Cabinets', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Cleanup', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 5 }
+        ];
+
+        // 7. Vanity Install Package
+        const vanityInstallItems = [
+            { id: generateId(), name: 'Install vanity', category: 'Plumbing', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 1.5, laborRate: 65, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Install top', category: 'Countertops', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 1, laborRate: 55, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Hook up faucet/sink', category: 'Plumbing', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 1, laborRate: 65, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Minor trim touch-up', category: 'Finish Carpentry', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 0.5, laborRate: 55, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Cleanup', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 0.5, laborRate: 45, markupPercent: 20, sortOrder: 5 }
+        ];
+
+        // 8. Roofing Replacement Package
+        const roofingReplaceItems = [
+            { id: generateId(), name: 'Tear-off', category: 'Roofing', quantity: 2000, unit: 'sq ft', materialCost: 0, laborHours: 8, laborRate: 45, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Underlayment', category: 'Roofing', quantity: 2100, unit: 'sq ft', materialCost: 0.35, laborHours: 2, laborRate: 45, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Shingles', category: 'Roofing', quantity: 2100, unit: 'sq ft', materialCost: 1.25, laborHours: 6, laborRate: 45, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Flashing', category: 'Roofing', quantity: 1, unit: 'lot', materialCost: 150, laborHours: 2, laborRate: 55, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Ridge vent/cap', category: 'Roofing', quantity: 40, unit: 'linear ft', materialCost: 3, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Dump fees', category: 'Permits/Fees', quantity: 1, unit: 'lot', materialCost: 400, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 6 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 2, laborRate: 45, markupPercent: 20, sortOrder: 7 }
+        ];
+
+        // Create assembly objects
+        const assemblies = [
+            { id: 'asm_bath_demo', name: 'Bathroom Demo Package', category: 'Demolition', description: 'Full bathroom demolition including vanity, toilet, tub, flooring, and debris removal.', lineItems: bathroomDemoItems, createdDate: now, updatedDate: now },
+            { id: 'asm_kitchen_demo', name: 'Kitchen Demo Package', category: 'Demolition', description: 'Full kitchen demolition including cabinets, countertops, backsplash, and debris removal.', lineItems: kitchenDemoItems, createdDate: now, updatedDate: now },
+            { id: 'asm_lvp_floor', name: 'LVP Flooring Install Package', category: 'Flooring', description: 'Complete luxury vinyl plank flooring install with surface prep, materials, transitions, and cleanup.', lineItems: lvpFlooringItems, createdDate: now, updatedDate: now },
+            { id: 'asm_paint_room', name: 'Paint Room Package', category: 'Paint', description: 'Full room painting including prep, walls (2 coats), optional ceiling and trim.', lineItems: paintRoomItems, createdDate: now, updatedDate: now },
+            { id: 'asm_drywall_patch', name: 'Drywall Patch Repair Package', category: 'Drywall', description: 'Drywall patch repair including cut, patch, tape/mud, sand, texture match, prime.', lineItems: drywallPatchItems, createdDate: now, updatedDate: now },
+            { id: 'asm_cabinet_install', name: 'Standard Cabinet Install Package', category: 'Cabinets', description: 'Standard base and wall cabinet installation with hardware and adjustments.', lineItems: cabinetInstallItems, createdDate: now, updatedDate: now },
+            { id: 'asm_vanity_install', name: 'Vanity Install Package', category: 'Plumbing', description: 'Complete vanity installation including top, faucet, sink hookup, and trim.', lineItems: vanityInstallItems, createdDate: now, updatedDate: now },
+            { id: 'asm_roof_replace', name: 'Roofing Replacement Package', category: 'Roofing', description: 'Complete roof replacement including tear-off, underlayment, shingles, flashing, ridge, and dump fees.', lineItems: roofingReplaceItems, createdDate: now, updatedDate: now }
+        ];
+
+        // === STARTER TEMPLATES ===
+        // 1. Kitchen Remodel Template
+        const templateKitchenItems = [
+            { id: generateId(), name: 'Kitchen Demo Package', category: 'Demolition', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 1, isAssembly: true, assemblyId: 'asm_kitchen_demo' },
+            { id: generateId(), name: 'Framing repair', category: 'Framing', quantity: 1, unit: 'lot', materialCost: 100, laborHours: 2, laborRate: 45, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Standard cabinet install', category: 'Cabinets', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 3, isAssembly: true, assemblyId: 'asm_cabinet_install' },
+            { id: generateId(), name: 'Countertop allowance', category: 'Countertops', quantity: 40, unit: 'sq ft', materialCost: 85, laborHours: 0, laborRate: 55, markupPercent: 20, sortOrder: 4 },
+            { id: generateId(), name: 'Backsplash allowance', category: 'Tile', quantity: 30, unit: 'sq ft', materialCost: 8, laborHours: 1.5, laborRate: 45, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Plumbing fixture updates', category: 'Plumbing', quantity: 1, unit: 'lot', materialCost: 350, laborHours: 4, laborRate: 65, markupPercent: 20, sortOrder: 6 },
+            { id: generateId(), name: 'Electrical fixture updates', category: 'Electrical', quantity: 1, unit: 'lot', materialCost: 250, laborHours: 4, laborRate: 65, markupPercent: 20, sortOrder: 7 },
+            { id: generateId(), name: 'LVP flooring install', category: 'Flooring', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 8, isAssembly: true, assemblyId: 'asm_lvp_floor' },
+            { id: generateId(), name: 'Paint room', category: 'Paint', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 9, isAssembly: true, assemblyId: 'asm_paint_room' },
+            { id: generateId(), name: 'Trim/finish carpentry', category: 'Finish Carpentry', quantity: 1, unit: 'lot', materialCost: 200, laborHours: 4, laborRate: 55, markupPercent: 20, sortOrder: 10 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 2, laborRate: 45, markupPercent: 20, sortOrder: 11 }
+        ];
+
+        // 2. Bathroom Remodel Template  
+        const templateBathroomItems = [
+            { id: generateId(), name: 'Bathroom demo package', category: 'Demolition', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 1, isAssembly: true, assemblyId: 'asm_bath_demo' },
+            { id: generateId(), name: 'Drywall patch repair', category: 'Drywall', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 2, isAssembly: true, assemblyId: 'asm_drywall_patch' },
+            { id: generateId(), name: 'Tub/shower surround', category: 'Tile', quantity: 1, unit: 'lot', materialCost: 800, laborHours: 8, laborRate: 55, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Vanity install', category: 'Plumbing', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 4, isAssembly: true, assemblyId: 'asm_vanity_install' },
+            { id: generateId(), name: 'Toilet install', category: 'Plumbing', quantity: 1, unit: 'ea', materialCost: 150, laborHours: 1, laborRate: 65, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Tile floor install', category: 'Tile', quantity: 40, unit: 'sq ft', materialCost: 10, laborHours: 3, laborRate: 50, markupPercent: 20, sortOrder: 6 },
+            { id: generateId(), name: 'Paint room', category: 'Paint', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 7, isAssembly: true, assemblyId: 'asm_paint_room' },
+            { id: generateId(), name: 'Light fixture update', category: 'Electrical', quantity: 2, unit: 'ea', materialCost: 100, laborHours: 1, laborRate: 65, markupPercent: 20, sortOrder: 8 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 9 }
+        ];
+
+        // 3. Light Flip Rehab Template
+        const templateFlipItems = [
+            { id: generateId(), name: 'Interior demolition', category: 'Demolition', quantity: 1, unit: 'lot', materialCost: 500, laborHours: 12, laborRate: 45, markupPercent: 20, sortOrder: 1 },
+            { id: generateId(), name: 'Drywall patch repairs', category: 'Drywall', quantity: 1, unit: 'lot', materialCost: 200, laborHours: 6, laborRate: 45, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Whole house paint', category: 'Paint', quantity: 3500, unit: 'sq ft', materialCost: 350, laborHours: 20, laborRate: 45, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'LVP flooring install', category: 'Flooring', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 4, isAssembly: true, assemblyId: 'asm_lvp_floor' },
+            { id: generateId(), name: 'Plumbing fixture updates', category: 'Plumbing', quantity: 1, unit: 'lot', materialCost: 600, laborHours: 6, laborRate: 65, markupPercent: 20, sortOrder: 5 },
+            { id: generateId(), name: 'Electrical fixture updates', category: 'Electrical', quantity: 1, unit: 'lot', materialCost: 450, laborHours: 6, laborRate: 65, markupPercent: 20, sortOrder: 6 },
+            { id: generateId(), name: 'Interior door install', category: 'Doors/Windows', quantity: 6, unit: 'ea', materialCost: 300, laborHours: 4, laborRate: 55, markupPercent: 20, sortOrder: 7 },
+            { id: generateId(), name: 'Trim/baseboard', category: 'Finish Carpentry', quantity: 300, unit: 'linear ft', materialCost: 150, laborHours: 6, laborRate: 55, markupPercent: 20, sortOrder: 8 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 4, laborRate: 45, markupPercent: 20, sortOrder: 9 }
+        ];
+
+        // 4. Roofing Replacement Template
+        const templateRoofingItems = [
+            { id: generateId(), name: 'Roofing replacement', category: 'Roofing', quantity: 1, unit: 'ea', materialCost: 0, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 1, isAssembly: true, assemblyId: 'asm_roof_replace' },
+            { id: generateId(), name: 'Decking repair allowance', category: 'Roofing', quantity: 100, unit: 'sq ft', materialCost: 8, laborHours: 2, laborRate: 55, markupPercent: 20, sortOrder: 2 },
+            { id: generateId(), name: 'Permit fees', category: 'Permits/Fees', quantity: 1, unit: 'lot', materialCost: 500, laborHours: 0, laborRate: 0, markupPercent: 20, sortOrder: 3 },
+            { id: generateId(), name: 'Final cleanup', category: 'Cleanup', quantity: 1, unit: 'lot', materialCost: 0, laborHours: 1, laborRate: 45, markupPercent: 20, sortOrder: 4 }
+        ];
+
+        const templates = [
+            { id: 'tpl_kitchen', name: 'Kitchen Remodel Template', category: 'kitchen', description: 'Complete kitchen remodel including demo, cabinets, countertops, flooring, and paint.', lineItems: templateKitchenItems, createdDate: now, updatedDate: now },
+            { id: 'tpl_bathroom', name: 'Bathroom Remodel Template', category: 'bathroom', description: 'Complete bathroom remodel with demo, new tub/shower, vanity, tile floor, and paint.', lineItems: templateBathroomItems, createdDate: now, updatedDate: now },
+            { id: 'tpl_flip', name: 'Light Flip Rehab Template', category: 'flip', description: 'Interior flip rehab including demolition, paint, flooring, plumbing, electrical, doors, trim.', lineItems: templateFlipItems, createdDate: now, updatedDate: now },
+            { id: 'tpl_roofing', name: 'Roofing Replacement Template', category: 'roofing', description: 'Complete roofing replacement with tear-off, new shingles, flashing, and permit.', lineItems: templateRoofingItems, createdDate: now, updatedDate: now }
+        ];
+
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(defaultSettings));
         localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs));
         localStorage.setItem(STORAGE_KEYS.ESTIMATES, JSON.stringify(estimates));
-        localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates));
         localStorage.setItem(STORAGE_KEYS.COST_LIBRARY, JSON.stringify([]));
-        localStorage.setItem(STORAGE_KEYS.ASSEMBLIES, JSON.stringify([]));
+        localStorage.setItem(STORAGE_KEYS.ASSEMBLIES, JSON.stringify(assemblies));
         localStorage.setItem(STORAGE_KEYS.CHANGE_ORDERS, JSON.stringify([]));
         localStorage.setItem(STORAGE_KEYS.PHOTO_NOTES, JSON.stringify([]));
         localStorage.setItem(STORAGE_KEYS.SUBCONTRACTOR_BIDS, JSON.stringify([]));
