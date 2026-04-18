@@ -181,10 +181,9 @@ const Storage = {
         const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
         const dayAfter = new Date(today); dayAfter.setDate(dayAfter.getDate() + 2);
         const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate() + 7);
-        const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
         
         const calendarEvents = [
-            { id: 'cal_1', jobId: 'job_demo_2', title: 'Kitchen Install', type: 'install', startDate: today.toISOString().split('T')[0], startTime: '08:00', endTime: '17:00', allDay: false, location: '456 Maple Ave', assignedTo: '', crewId: '', status: 'scheduled', notes: '', createdDate: now, updatedDate: now }],
+            { id: 'cal_1', jobId: 'job_demo_2', title: 'Kitchen Install', type: 'install', startDate: today.toISOString().split('T')[0], startTime: '08:00', endTime: '17:00', allDay: false, location: '456 Maple Ave', assignedTo: '', crewId: '', status: 'scheduled', notes: '', createdDate: now, updatedDate: now },
             { id: 'cal_2', jobId: 'job_demo_3', title: 'Site Visit - Estimate', type: 'estimate_appointment', startDate: tomorrow.toISOString().split('T')[0], startTime: '10:00', endTime: '11:00', allDay: false, location: '789 Ridgeview Dr', assignedTo: '', crewId: '', status: 'confirmed', notes: 'Bring paint samples', createdDate: now, updatedDate: now },
             { id: 'cal_3', jobId: 'job_demo_1', title: 'Final Walkthrough', type: 'final_walkthrough', startDate: dayAfter.toISOString().split('T')[0], startTime: '14:00', endTime: '15:00', allDay: false, location: '123 Oak Street', assignedTo: 'Allen Foster', crewId: '', status: 'scheduled', notes: '', createdDate: now, updatedDate: now },
             { id: 'cal_4', jobId: 'job_demo_2', title: 'Material Delivery', type: 'material_delivery', startDate: nextWeek.toISOString().split('T')[0], startTime: '09:00', endTime: '10:00', allDay: false, location: '456 Maple Ave', assignedTo: '', crewId: '', status: 'scheduled', notes: 'Cabinets and countertops', createdDate: now, updatedDate: now }
